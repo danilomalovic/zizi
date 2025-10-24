@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Loader2, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getAIExplanation, type AIContext } from "@/utils/aiAssistant";
+import { getAIExplanation, getAIEdit, type AIContext } from "@/utils/aiAssistant";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -56,7 +56,15 @@ export function ChatPanel({ fullProject, currentRoutine }: ChatPanelProps) {
         currentRoutine,
       };
 
-      const response = await getAIExplanation(inputText, context);
+      // Check if this is an /edit command
+      const isEditCommand = inputText.trim().startsWith('/edit');
+      const question = isEditCommand 
+        ? inputText.trim().substring(5).trim() // Remove "/edit" and trim
+        : inputText;
+
+      const response = isEditCommand
+        ? await getAIEdit(question, context)
+        : await getAIExplanation(question, context);
 
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
