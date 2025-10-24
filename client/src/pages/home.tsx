@@ -298,7 +298,8 @@ export default function Home() {
             
             return {
               ...routine,
-              rungs: routine.rungs.filter(rung => rung.number !== rungNumber)
+              // Use Number() conversion to handle type mismatches between string/number
+              rungs: routine.rungs.filter(rung => Number(rung.number) !== Number(rungNumber))
             };
           })
         };

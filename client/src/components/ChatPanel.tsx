@@ -58,14 +58,26 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung, onRemoveRung
         currentRoutine,
       };
 
-      // Check for special commands
-      const isEditCommand = inputText.trim().startsWith('/edit');
-      const isRemoveCommand = inputText.trim().startsWith('/remove');
+      // Check for explicit slash commands
+      const hasEditSlashCommand = inputText.trim().startsWith('/edit');
+      const hasRemoveSlashCommand = inputText.trim().startsWith('/remove');
+
+      // Detect natural language intent
+      const lowerText = inputText.trim().toLowerCase();
+      const removePatterns = /^(remove|delete|get rid of|erase|clear)\s+(the\s+)?(mov|xic|xio|ote|otl|otu|rung|instruction|block)/i;
+      const addPatterns = /^(add|create|insert|make)\s+(a\s+)?(rung|mov|xic|xio|ote|otl|otu|instruction|block)/i;
+      
+      const hasRemoveIntent = removePatterns.test(lowerText);
+      const hasAddIntent = addPatterns.test(lowerText);
+
+      // Determine the mode: edit, remove, or ask
+      const isEditCommand = hasEditSlashCommand || hasAddIntent;
+      const isRemoveCommand = hasRemoveSlashCommand || hasRemoveIntent;
       
       let question = inputText;
-      if (isEditCommand) {
+      if (hasEditSlashCommand) {
         question = inputText.trim().substring(5).trim(); // Remove "/edit" and trim
-      } else if (isRemoveCommand) {
+      } else if (hasRemoveSlashCommand) {
         question = inputText.trim().substring(7).trim(); // Remove "/remove" and trim
       }
 
@@ -236,13 +248,13 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung, onRemoveRung
             <div className="text-sm text-center max-w-xs">
               <p className="font-medium mb-2">Welcome to Ask the PLC!</p>
               <p className="text-xs mb-3">
-                I can help you learn, create, and edit your ladder logic.
+                I can help you learn, create, and edit your ladder logic using natural language.
               </p>
-              <div className="text-xs space-y-1 text-left bg-muted/50 p-2 rounded">
-                <p className="font-medium">Commands:</p>
-                <p>• Ask questions naturally</p>
-                <p>• <span className="font-mono">/edit</span> - Create new rungs</p>
-                <p>• <span className="font-mono">/remove</span> - Delete rungs</p>
+              <div className="text-xs space-y-1.5 text-left bg-muted/50 p-2 rounded">
+                <p className="font-medium">Try saying:</p>
+                <p>• "What does this routine do?"</p>
+                <p>• "Add a rung with XIC for Start"</p>
+                <p>• "Remove the MOV block"</p>
               </div>
             </div>
           </div>

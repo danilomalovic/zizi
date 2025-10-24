@@ -2,269 +2,82 @@
 
 ## Overview
 
-This is a professional engineering tool for parsing and viewing RSLogix 5000 L5X (Logix 5000 XML) control files. The application provides an intuitive interface to upload L5X files, extract routines and tags from PLC programs, and view formatted XML content. It's designed as a developer tool with emphasis on clarity, information density, and efficient navigation of industrial automation data.
-
-The application follows a clean, minimalist design approach inspired by developer tools like VS Code and Linear, prioritizing function over decoration with a focus on typography, spacing, and information accessibility.
+This application is a professional engineering tool for parsing and viewing RSLogix 5000 L5X (Logix 5000 XML) control files. It enables users to upload L5X files, extract routines and tags from PLC programs, and view formatted XML content through an intuitive interface. The primary purpose is to serve as a developer tool, emphasizing clarity, information density, and efficient navigation of industrial automation data. It aims to provide full CRUD editing capabilities for ladder logic using natural language intent detection, allowing users to ask questions, create, and delete ladder logic elements. The long-term vision is to establish this as a leading, AI-powered developer tool for industrial automation, streamlining PLC programming and maintenance.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes
-
-**October 24, 2025 - Full CRUD Editing Capabilities:**
-- Refactored parser to perform deep parsing upfront instead of lazy parsing
-- Updated `ParsedResult` structure: Controller → Programs[] → Routines[] → Rungs[]
-- All rungs are now parsed during file upload and stored in deeply nested state
-- Removed `originalXML`, `parsedRungs`, and `loadingRungs` states from home.tsx
-- Added `addRungToRoutine()` and `removeRungFromRoutine()` functions for immutable state updates
-- ChatPanel now supports three modes of operation:
-  - **Ask mode** (default): Natural language explanations of ladder logic
-  - **Edit mode** (`/edit`): Create new rungs from natural language
-  - **Remove mode** (`/remove`): Delete rungs by natural language description
-- Added `/api/ai/remove` endpoint for intelligent rung removal detection
-- AI can identify which rung to remove based on instruction type, tag name, or rung number
-- Added JSON validation for both edit and remove operations
-- Improved error handling with toast notifications for all operations
-- UI updated with helpful command guide in the chat welcome screen
-- Full ladder logic editing with visual feedback now operational
-
 ## System Architecture
 
 ### Frontend Architecture
 
-**Framework & Build System:**
-- React 18 with TypeScript for type safety
-- Vite as the build tool and development server
-- Client-side routing using Wouter (lightweight alternative to React Router)
-- Single-page application (SPA) architecture
-
-**UI Component System:**
-- Shadcn/ui component library (New York style variant)
-- Radix UI primitives for accessible, unstyled components
-- Tailwind CSS for utility-first styling with custom design tokens
-- Class Variance Authority (CVA) for component variant management
-
-**Design System:**
-- Custom color system using HSL color space with CSS variables
-- Support for light/dark modes via CSS class switching
-- Typography system using Inter (interface) and JetBrains Mono (code display)
-- Consistent spacing primitives (2, 3, 4, 6, 8 Tailwind units)
-- Responsive layout: 3-column desktop grid, stacked mobile columns
-
-**State Management:**
-- React Query (TanStack Query) for server state and API caching
-- Local component state with React hooks (useState, useEffect)
-- React Hook Form with Zod validation for form handling
-- Toast notifications for user feedback
-
-**XML Processing:**
-- `fast-xml-parser` library for parsing L5X files
-- Browser's native DOMParser for XML extraction and manipulation
-- Custom formatter for pretty-printing XML output
+The frontend is built with React 18 and TypeScript, using Vite for fast development and Wouter for client-side routing, forming a Single-Page Application (SPA). The UI system leverages Shadcn/ui (New York style variant) atop Radix UI primitives for accessible components, styled with Tailwind CSS and custom design tokens. State management uses React Query for server state and API caching, with local component state managed by React hooks. Form handling is done with React Hook Form and Zod validation. XML parsing is handled by `fast-xml-parser` and the browser's native DOMParser.
 
 ### Backend Architecture
 
-**Server Framework:**
-- Express.js as the HTTP server
-- TypeScript for type-safe server code
-- ESM module system throughout the codebase
+The backend uses Express.js with TypeScript and ESM modules. It's configured with Vite middleware for development and a production build process utilizing esbuild. The file structure follows a monorepo style with `/client`, `/server`, and `/shared` directories. An abstract `IStorage` interface is used for data persistence, currently with an in-memory implementation but designed for database integration. Authentication infrastructure is in place using Express sessions and `connect-pg-simple`, though not actively used.
 
-**Development Setup:**
-- Vite middleware mode for development hot-reloading
-- Development-only plugins for Replit integration (error overlay, cartographer, dev banner)
-- Production build compiles both client (Vite) and server (esbuild)
+### AI Assistant API
 
-**File Structure:**
-- `/client` - Frontend React application
-- `/server` - Express backend with routes and storage
-- `/shared` - Shared types and schemas (database models)
-- Monorepo-style organization with path aliases (@, @shared, @assets)
-
-**Current Implementation:**
-- Minimal backend with in-memory storage interface
-- Ready-to-extend storage abstraction (IStorage interface)
-- Session management infrastructure in place (connect-pg-simple)
-- **AI Assistant API:**
-  - POST `/api/ai/ask` - Conversational explanation endpoint
-    - Accepts user questions with project context
-    - Integrates with OpenAI GPT-4o via Replit AI Integrations
-    - Processes questions with full awareness of controller, programs, routines, and tags
-    - Returns natural language explanations with **🔧 Rung X:** formatting
-    - Temperature: 0.3 for consistent but natural responses
-  - POST `/api/ai/edit` - Natural language to JSON translation endpoint
-    - Accepts natural language ladder logic requests
-    - Returns ONLY raw JSON structures (no markdown, no explanations)
-    - Temperature: 0.0 for deterministic, consistent JSON output
-    - Strict system prompt enforces JSON-only responses
-    - Validates tag names and routine names against project context
-    - Integrated with state management for live rung additions
-  - POST `/api/ai/remove` - Intelligent rung removal endpoint
-    - Accepts natural language removal requests
-    - Returns JSON with rung number to remove: `{"rungNumber": N}`
-    - Temperature: 0.0 for deterministic rung identification
-    - Analyzes rung context to identify target by description, instruction type, or tag name
-    - Integrated with state management for live rung deletion
+The application integrates an AI Assistant accessible via API endpoints:
+- `POST /api/ai/ask`: Provides conversational explanations of ladder logic using OpenAI GPT-4o, with full project context awareness.
+- `POST /api/ai/edit`: Translates natural language requests into JSON structures for creating new ladder logic rungs, enforcing strict JSON output.
+- `POST /api/ai/remove`: Intelligently identifies and returns the rung number to remove based on natural language descriptions, enforcing strict JSON output.
 
 ### Data Storage Solutions
 
-**Database Configuration:**
-- Drizzle ORM for type-safe database operations
-- PostgreSQL dialect configured (via @neondatabase/serverless)
-- Schema-first approach with Zod validation integration
-- Migration system configured (./migrations directory)
-
-**Schema Design:**
-- Users table with username/password authentication
-- UUID primary keys with PostgreSQL's gen_random_uuid()
-- Type inference from Drizzle schema to TypeScript types
-
-**Storage Layer:**
-- Abstract IStorage interface for CRUD operations
-- In-memory implementation (MemStorage) for development
-- Designed for easy swap to database-backed storage
-- Separation of concerns between storage interface and implementation
-
-### Authentication & Authorization
-
-**Planned Authentication:**
-- User credentials stored with password hashing (infrastructure present)
-- Session-based authentication via Express sessions
-- PostgreSQL session store configured (connect-pg-simple)
-- Cookie-based session management
-
-**Current State:**
-- Authentication infrastructure configured but not actively used
-- Application currently operates without authentication requirements
-- File parsing happens entirely client-side (no server interaction needed)
+The system uses Drizzle ORM for type-safe database operations, configured for a PostgreSQL dialect via `@neondatabase/serverless`. It follows a schema-first approach with Zod validation and includes a migration system.
 
 ### Application Features
 
-**L5X File Processing:**
-- Client-side file upload and parsing (no server upload needed)
-- Full hierarchical extraction of controller structure
-- Deep parsing of entire project structure on upload
-- Parser returns deeply nested object: Controller → Programs[] → Routines[] → Rungs[]
-- Each Rung contains: `{ number, text, parsed }` with JSON syntax tree
-- Extracts controller-scoped tags and program-scoped tags
-- **RLL (Relay Ladder Logic) Parser:**
-  - Parses ladder logic rung text into JSON syntax trees
-  - Handles basic instructions (XIC, OTE, etc.) with single parameters
-  - Handles multi-parameter instructions (MOV, etc.) with source/dest fields
-  - Fully supports nested branches `[...]` and parallel branches (comma-separated)
-  - Respects parentheses depth when parsing comma-separated parameters
-  - Preserves PLC rung numbering from XML
-  - Example: `[XIC(Tag.0),XIC(Tag.1)]MOV(32,Dest);` → Branch structure with parallel paths and MOV instruction
-
-**User Interface:**
-- Three-column grid layout (responsive to xl breakpoint):
-  - **Left Panel (xl:col-span-3)**: File upload + IDE-like collapsible tree view
-  - **Center Panel (xl:col-span-5)**: Visual ladder logic viewer with SVG rendering
-  - **Right Panel (xl:col-span-4)**: AI-powered "Ask the PLC" chat assistant
-- **Project Tree View:**
-  - IDE-like collapsible tree displaying full project hierarchy
-  - Controller name as root node
-  - Controller Tags section (collapsible)
-  - Programs section with each program showing Tags and Routines subfolders
-  - All routines clickable to display visual ladder diagrams and update chat context
-  - Default expanded state: Controller, Programs, and all program subfolders open on load
-  - Chevron icons (▶/▼) indicate collapse/expand state
-- **Visual Ladder Logic Viewer:**
-  - SVG-based ladder diagram rendering for each rung
-  - Left and right power rails with proper spacing
-  - Visual instruction symbols:
-    - XIC (Normally Open Contact): `| |`
-    - XIO (Normally Closed Contact): `|/|`
-    - OTE (Output Energize): `( )`
-    - OTL/OTU (Latch/Unlatch): `(L)` / `(U)`
-    - MOV and other box instructions: Rectangle with source/dest
-  - Tag names displayed above instruction symbols with consistent spacing
-  - Parallel branches with proper split/merge visualization
-  - All branches extend to merge bus regardless of length
-  - Professional ladder diagram aesthetics
-- **AI Chat Assistant ("Ask the PLC"):**
-  - Context-aware chat panel with full project awareness
-  - Real-time conversation with AI expert on Rockwell Automation programming
-  - Message history with user/assistant message differentiation
-  - Automatic context passing (full project + currently selected routine)
-  - Integrated with OpenAI GPT-4o via Replit AI Integrations
-  - Backend API endpoints ensure secure API key management
-  - **Three Modes of Operation:**
-    - **Ask Mode (default)**: Natural language responses with **🔧 Rung X:** formatting
-      - Uses `/api/ai/ask` endpoint with temperature 0.3
-      - Returns conversational, friendly explanations of ladder logic
-      - Answers questions about routines, tags, and program structure
-      - Example: "What does rung 0 do?" or "Explain this routine"
-    - **Edit Mode (slash command)**: Natural language to ladder logic creation
-      - Activated by typing `/edit` before the request
-      - Uses `/api/ai/edit` endpoint with temperature 0.0 for deterministic output
-      - Returns ONLY raw JSON structures representing ladder logic instructions
-      - System prompt enforces strict JSON-only responses (no markdown, no explanations)
-      - Example: `/edit add a rung with an XIC for 'Start' and an OTE for 'Motor'`
-      - Supports complex structures like branches, multi-parameter instructions, and nested logic
-      - Automatically creates new rungs in the selected routine with immutable state updates
-      - New rungs appear immediately in the visual ladder logic viewer
-    - **Remove Mode (slash command)**: Intelligent rung deletion
-      - Activated by typing `/remove` before the request
-      - Uses `/api/ai/remove` endpoint with temperature 0.0 for deterministic detection
-      - Returns JSON indicating which rung to remove: `{"rungNumber": N}`
-      - AI analyzes rung context to identify target based on description
-      - Example: `/remove the ProgramTwoSINT.0` or `/remove rung 0`
-      - Automatically removes the identified rung from the routine
-      - Deletion confirmed with toast notification and chat message
-  - Full CRUD capabilities: Learn, Create, and Delete ladder logic operations
-- Real-time file validation (L5X extension check)
-- Loading states and error handling with user feedback
-- Professional developer tool aesthetics matching VS Code/Linear design patterns
-
-**Performance Optimizations:**
-- Component state management with useState for tree collapse/expand
-- Deep parsing performed once during file upload (all rungs parsed upfront)
-- Efficient tree rendering with proper React keys
-- Smooth transitions for interactive elements
-- Immutable state updates using spread operators for React optimization
+- **L5X File Processing**: Client-side parsing of L5X files, extracting a hierarchical structure of controllers, programs, routines, and tags. It includes a comprehensive RLL (Relay Ladder Logic) parser that converts rung text into a JSON syntax tree, supporting various instructions, nested branches, and parallel branches.
+- **User Interface**: A three-column responsive grid layout features:
+    - A **Left Panel** with a file upload and an IDE-like collapsible tree view displaying the project hierarchy.
+    - A **Center Panel** providing a visual ladder logic viewer with SVG rendering of rungs, instructions, and tags.
+    - A **Right Panel** hosting the AI-powered "Ask the PLC" chat assistant.
+- **AI Chat Assistant**: A context-aware chat panel with three modes:
+    - **Ask Mode**: For natural language explanations of ladder logic.
+    - **Edit Mode**: Activated by `/edit` or natural language intent, for creating new rungs via AI-generated JSON.
+    - **Remove Mode**: Activated by `/remove` or natural language intent, for intelligently deleting rungs.
+- Real-time file validation, loading states, error handling, and performance optimizations are integrated throughout.
 
 ## External Dependencies
 
 ### Core Frontend Libraries
-- **React & React DOM (^18.3.1)**: UI framework
-- **Vite**: Build tool and development server
-- **Wouter**: Lightweight client-side routing
-- **TanStack React Query**: Server state management and caching
+- React
+- Vite
+- Wouter
+- TanStack React Query
 
 ### UI Component Libraries
-- **Radix UI**: 20+ primitive components for accessibility (@radix-ui/react-*)
-- **Shadcn/ui**: Pre-built component library (configured, not installed as dependency)
-- **Tailwind CSS**: Utility-first CSS framework
-- **Lucide React**: Icon library
-- **Class Variance Authority**: Component variant utilities
-- **clsx & tailwind-merge**: Conditional className utilities
+- Radix UI
+- Shadcn/ui
+- Tailwind CSS
+- Lucide React
+- Class Variance Authority
 
 ### Data & Validation
-- **Zod**: TypeScript-first schema validation
-- **React Hook Form**: Form state management
-- **@hookform/resolvers**: Zod integration for forms
-- **Drizzle Zod**: Drizzle schema to Zod conversion
+- Zod
+- React Hook Form
+- Drizzle Zod
 
 ### Backend & Database
-- **Express**: Web server framework
-- **Drizzle ORM**: TypeScript ORM for SQL databases
-- **@neondatabase/serverless**: PostgreSQL driver for Neon
-- **connect-pg-simple**: PostgreSQL session store
-- **OpenAI SDK**: AI chat completions for the "Ask the PLC" feature
+- Express
+- Drizzle ORM
+- @neondatabase/serverless
+- connect-pg-simple
+- OpenAI SDK
 
 ### Utilities & Tools
-- **fast-xml-parser**: XML parsing library (critical for L5X processing)
-- **date-fns**: Date manipulation utilities
-- **nanoid**: Unique ID generation
-- **embla-carousel-react**: Carousel/slider component
+- fast-xml-parser
+- date-fns
+- nanoid
+- embla-carousel-react
 
 ### Development Tools
-- **TypeScript**: Type safety across the stack
-- **tsx**: TypeScript execution for development
-- **esbuild**: Fast JavaScript bundler for production
-- **Drizzle Kit**: Database migration tool
-- **@replit/vite-plugin-***: Replit-specific development plugins (error modal, cartographer, dev banner)
-
-### Font Resources
-- **Google Fonts**: Inter, DM Sans, Fira Code, Geist Mono, Architects Daughter (loaded via CDN in index.html)
+- TypeScript
+- tsx
+- esbuild
+- Drizzle Kit
+- @replit/vite-plugin-*
