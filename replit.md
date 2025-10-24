@@ -67,10 +67,19 @@ Preferred communication style: Simple, everyday language.
 - Ready-to-extend storage abstraction (IStorage interface)
 - Session management infrastructure in place (connect-pg-simple)
 - **AI Assistant API:**
-  - POST `/api/ai/ask` - Accepts user questions with project context
-  - Integrates with OpenAI GPT-4o-mini via Replit AI Integrations
-  - Processes questions with full awareness of controller, programs, routines, and tags
-  - Returns natural language explanations of PLC logic and programming concepts
+  - POST `/api/ai/ask` - Conversational explanation endpoint
+    - Accepts user questions with project context
+    - Integrates with OpenAI GPT-4o via Replit AI Integrations
+    - Processes questions with full awareness of controller, programs, routines, and tags
+    - Returns natural language explanations with **🔧 Rung X:** formatting
+    - Temperature: 0.3 for consistent but natural responses
+  - POST `/api/ai/edit` - Natural language to JSON translation endpoint
+    - Accepts natural language ladder logic requests
+    - Returns ONLY raw JSON structures (no markdown, no explanations)
+    - Temperature: 0.0 for deterministic, consistent JSON output
+    - Strict system prompt enforces JSON-only responses
+    - Validates tag names and routine names against project context
+    - Foundation for future visual ladder editor
 
 ### Data Storage Solutions
 
@@ -151,9 +160,22 @@ Preferred communication style: Simple, everyday language.
   - Real-time conversation with AI expert on Rockwell Automation programming
   - Message history with user/assistant message differentiation
   - Automatic context passing (full project + currently selected routine)
-  - Integrated with OpenAI GPT-4o-mini via Replit AI Integrations
-  - Backend API endpoint ensures secure API key management
-  - Helpful for explaining ladder logic, analyzing program structure, and answering PLC questions
+  - Integrated with OpenAI GPT-4o via Replit AI Integrations
+  - Backend API endpoints ensure secure API key management
+  - **Two Modes of Operation:**
+    - **Explanation Mode (default)**: Natural language responses with **🔧 Rung X:** formatting
+      - Uses `/api/ai/ask` endpoint with temperature 0.3
+      - Returns conversational, friendly explanations of ladder logic
+      - Answers questions about routines, tags, and program structure
+    - **Edit Mode (slash command)**: Natural language to JSON translator
+      - Activated by typing `/edit` before the request
+      - Uses `/api/ai/edit` endpoint with temperature 0.0 for deterministic output
+      - Returns ONLY raw JSON structures representing ladder logic instructions
+      - System prompt enforces strict JSON-only responses (no markdown, no explanations)
+      - Example input: `/edit add a rung with an XIC for 'Start' and an OTE for 'Motor'`
+      - Example output: `[{"type":"XIC","tag":"Start"},{"type":"OTE","tag":"Motor"}]`
+      - Supports complex structures like branches, multi-parameter instructions, and nested logic
+      - Foundation for future visual ladder editor functionality
 - Real-time file validation (L5X extension check)
 - Loading states and error handling with user feedback
 - Professional developer tool aesthetics matching VS Code/Linear design patterns
