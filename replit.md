@@ -103,23 +103,30 @@ Preferred communication style: Simple, everyday language.
 
 **L5X File Processing:**
 - Client-side file upload and parsing (no server upload needed)
-- Hierarchical extraction of controller name, programs, and routines
-- Parser returns structured object: `{ controllerName: string, programs: [{ name: string, routines: string[] }] }`
+- Full hierarchical extraction of controller structure
+- Parser returns structured object: `{ controllerName: string, controllerTags: string[], programs: [{ name: string, tags: string[], routines: string[] }] }`
+- Extracts controller-scoped tags and program-scoped tags
 - XML routine viewer with pretty-printing and formatting
 
 **User Interface:**
-- Three-panel layout: file upload/routines list, tags list, XML viewer
-- Search functionality for filtering routines and tags
+- Two-panel layout: left panel (tree view + file upload), right panel (XML viewer)
+- IDE-like collapsible tree view displaying full project hierarchy:
+  - Controller name as root node
+  - Controller Tags section (collapsible)
+  - Programs section with each program showing Tags and Routines subfolders
+  - All routines clickable to display XML
+- Default expanded state: Controller, Programs, and all program subfolders open on load
+- Chevron icons (▶/▼) indicate collapse/expand state
 - Copy-to-clipboard for XML content
-- Responsive collapsible sections for mobile
 - Real-time file validation (L5X extension check)
 - Loading states and error handling with user feedback
+- Professional developer tool aesthetics matching VS Code/Linear design patterns
 
 **Performance Optimizations:**
-- Memoized search filtering with useMemo
-- Debounced search inputs to reduce re-renders
+- Component state management with useState for tree collapse/expand
 - Lazy XML extraction (only when routine is selected)
-- Virtual scrolling capability via Radix ScrollArea
+- Efficient tree rendering with proper React keys
+- Smooth transitions for interactive elements
 
 ## External Dependencies
 

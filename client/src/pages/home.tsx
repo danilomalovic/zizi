@@ -1,16 +1,178 @@
-import { useState, useMemo, useRef, useEffect } from "react";
-import { Upload, Search, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useRef } from "react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { parseL5X, type ParsedResult, type Program } from "@/utils/parser";
 import { extractRoutineXML } from "@/utils/xml-formatter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-interface RoutineDisplay {
-  program: string;
-  name: string;
+interface TreeNodeProps {
+  label: string;
+  icon?: React.ReactNode;
+  onClick?: () => void;
+  isClickable?: boolean;
+  isSelected?: boolean;
+  children?: React.ReactNode;
+  defaultExpanded?: boolean;
+  level?: number;
+}
+
+function TreeNode({ 
+  label, 
+  icon, 
+  onClick, 
+  isClickable = false, 
+  isSelected = false,
+  children, 
+  defaultExpanded = false,
+  level = 0
+}: TreeNodeProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const hasChildren = !!children;
+
+  const handleClick = () => {
+    if (hasChildren) {
+      setIsExpanded(!isExpanded);
+    }
+    if (onClick) {
+      onClick();
+    }
+  };
+
+  return (
+    <div>
+      <div
+        onClick={handleClick}
+        className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer select-none transition-colors ${
+          isSelected 
+            ? 'bg-accent text-accent-foreground' 
+            : isClickable 
+            ? 'hover-elevate active-elevate-2' 
+            : 'hover-elevate'
+        }`}
+        style={{ paddingLeft: `${level * 1.25 + 0.5}rem` }}
+        data-testid={`tree-node-${label.toLowerCase().replace(/\s+/g, '-')}`}
+      >
+        {hasChildren ? (
+          isExpanded ? (
+            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          )
+        ) : (
+          <span className="w-4 flex-shrink-0" />
+        )}
+        {icon && <span className="flex-shrink-0">{icon}</span>}
+        <span className={`text-sm truncate ${isClickable ? 'font-medium text-foreground' : 'text-foreground'}`}>
+          {label}
+        </span>
+      </div>
+      {hasChildren && isExpanded && (
+        <div>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface TreeViewProps {
+  data: ParsedResult;
+  onRoutineClick: (programName: string, routineName: string) => void;
+  selectedRoutine: { program: string; name: string } | null;
+}
+
+function TreeView({ data, onRoutineClick, selectedRoutine }: TreeViewProps) {
+  return (
+    <div className="text-sm" data-testid="tree-view">
+      {/* Controller Root */}
+      <TreeNode 
+        label={data.controllerName} 
+        icon={<FileText className="w-4 h-4 text-chart-1" />}
+        defaultExpanded={true}
+        level={0}
+      >
+        {/* Controller Tags Section */}
+        {data.controllerTags.length > 0 && (
+          <TreeNode 
+            label="Controller Tags"
+            icon={<Badge variant="secondary" className="w-4 h-4 flex items-center justify-center text-[10px] p-0">{data.controllerTags.length}</Badge>}
+            defaultExpanded={false}
+            level={1}
+          >
+            {data.controllerTags.map((tag, index) => (
+              <TreeNode
+                key={`controller-tag-${tag}-${index}`}
+                label={tag}
+                level={2}
+              />
+            ))}
+          </TreeNode>
+        )}
+
+        {/* Programs Section */}
+        <TreeNode 
+          label="Programs"
+          icon={<Badge variant="secondary" className="w-4 h-4 flex items-center justify-center text-[10px] p-0">{data.programs.length}</Badge>}
+          defaultExpanded={true}
+          level={1}
+        >
+          {data.programs.map((program, pIndex) => (
+            <TreeNode
+              key={`program-${program.name}-${pIndex}`}
+              label={program.name}
+              icon={<FileText className="w-4 h-4 text-chart-3" />}
+              defaultExpanded={true}
+              level={2}
+            >
+              {/* Program Tags */}
+              {program.tags.length > 0 && (
+                <TreeNode
+                  label="Tags"
+                  icon={<Badge variant="secondary" className="w-4 h-4 flex items-center justify-center text-[10px] p-0">{program.tags.length}</Badge>}
+                  defaultExpanded={true}
+                  level={3}
+                >
+                  {program.tags.map((tag, tIndex) => (
+                    <TreeNode
+                      key={`program-tag-${program.name}-${tag}-${tIndex}`}
+                      label={tag}
+                      level={4}
+                    />
+                  ))}
+                </TreeNode>
+              )}
+
+              {/* Program Routines */}
+              {program.routines.length > 0 && (
+                <TreeNode
+                  label="Routines"
+                  icon={<Badge variant="secondary" className="w-4 h-4 flex items-center justify-center text-[10px] p-0">{program.routines.length}</Badge>}
+                  defaultExpanded={true}
+                  level={3}
+                >
+                  {program.routines.map((routine, rIndex) => (
+                    <TreeNode
+                      key={`routine-${program.name}-${routine}-${rIndex}`}
+                      label={routine}
+                      onClick={() => onRoutineClick(program.name, routine)}
+                      isClickable={true}
+                      isSelected={
+                        selectedRoutine?.program === program.name &&
+                        selectedRoutine?.name === routine
+                      }
+                      level={4}
+                    />
+                  ))}
+                </TreeNode>
+              )}
+            </TreeNode>
+          ))}
+        </TreeNode>
+      </TreeNode>
+    </div>
+  );
 }
 
 export default function Home() {
@@ -21,23 +183,13 @@ export default function Home() {
   const [fileSize, setFileSize] = useState<string | null>(null);
   const [originalXML, setOriginalXML] = useState<string>("");
   
-  const [selectedRoutine, setSelectedRoutine] = useState<RoutineDisplay | null>(null);
-  const [selectedRoutineIndex, setSelectedRoutineIndex] = useState<number>(-1);
+  const [selectedRoutine, setSelectedRoutine] = useState<{ program: string; name: string } | null>(null);
   const [routineXML, setRoutineXML] = useState<string | null>(null);
   const [loadingXML, setLoadingXML] = useState(false);
   
-  const [routineSearch, setRoutineSearch] = useState("");
-  const [tagSearch, setTagSearch] = useState("");
-  
   const [copied, setCopied] = useState(false);
   
-  // Mobile collapsible states
-  const [routinesExpanded, setRoutinesExpanded] = useState(true);
-  const [tagsExpanded, setTagsExpanded] = useState(true);
-  const [viewerExpanded, setViewerExpanded] = useState(true);
-  
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const routineListRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,10 +209,7 @@ export default function Home() {
     setError(null);
     setParsedData(null);
     setSelectedRoutine(null);
-    setSelectedRoutineIndex(-1);
     setRoutineXML(null);
-    setRoutineSearch("");
-    setTagSearch("");
 
     try {
       const text = await file.text();
@@ -86,14 +235,13 @@ export default function Home() {
     }
   };
 
-  const handleRoutineClick = (routine: RoutineDisplay, index: number) => {
-    setSelectedRoutine(routine);
-    setSelectedRoutineIndex(index);
+  const handleRoutineClick = (programName: string, routineName: string) => {
+    setSelectedRoutine({ program: programName, name: routineName });
     setLoadingXML(true);
     
     // Simulate async operation for better UX
     setTimeout(() => {
-      const xml = extractRoutineXML(originalXML, routine.program, routine.name);
+      const xml = extractRoutineXML(originalXML, programName, routineName);
       setRoutineXML(xml);
       setLoadingXML(false);
     }, 100);
@@ -114,104 +262,6 @@ export default function Home() {
         variant: "destructive",
         description: "Failed to copy to clipboard",
       });
-    }
-  };
-
-  // Flatten programs into routine display list
-  const allRoutines = useMemo(() => {
-    if (!parsedData) return [];
-    
-    const routines: RoutineDisplay[] = [];
-    for (const program of parsedData.programs) {
-      for (const routineName of program.routines) {
-        routines.push({
-          program: program.name,
-          name: routineName,
-        });
-      }
-    }
-    return routines;
-  }, [parsedData]);
-
-  const filteredRoutines = useMemo(() => {
-    if (!routineSearch.trim()) return allRoutines;
-    
-    const search = routineSearch.toLowerCase();
-    return allRoutines.filter(
-      (r) =>
-        r.name.toLowerCase().includes(search) ||
-        r.program.toLowerCase().includes(search)
-    );
-  }, [allRoutines, routineSearch]);
-
-  // Filter tags
-  const filteredControllerTags = useMemo(() => {
-    if (!parsedData) return [];
-    if (!tagSearch.trim()) return parsedData.controllerTags;
-    
-    const search = tagSearch.toLowerCase();
-    return parsedData.controllerTags.filter((tag) => tag.toLowerCase().includes(search));
-  }, [parsedData, tagSearch]);
-
-  const filteredProgramsWithTags = useMemo(() => {
-    if (!parsedData) return [];
-    if (!tagSearch.trim()) return parsedData.programs;
-    
-    const search = tagSearch.toLowerCase();
-    return parsedData.programs
-      .map((program) => ({
-        ...program,
-        tags: program.tags.filter((tag) => tag.toLowerCase().includes(search)),
-      }))
-      .filter((program) => program.tags.length > 0 || program.name.toLowerCase().includes(search));
-  }, [parsedData, tagSearch]);
-
-  // Reset selection when filtered routines change
-  useEffect(() => {
-    if (selectedRoutineIndex >= filteredRoutines.length) {
-      setSelectedRoutineIndex(-1);
-      setSelectedRoutine(null);
-      setRoutineXML(null);
-    }
-  }, [filteredRoutines, selectedRoutineIndex]);
-
-  // Keyboard navigation for routine list
-  const handleRoutineListKeyDown = (e: React.KeyboardEvent) => {
-    if (filteredRoutines.length === 0) return;
-    
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const currentIndex = selectedRoutineIndex < 0 ? -1 : selectedRoutineIndex;
-      const newIndex = Math.min(currentIndex + 1, filteredRoutines.length - 1);
-      if (newIndex >= 0 && newIndex < filteredRoutines.length) {
-        handleRoutineClick(filteredRoutines[newIndex], newIndex);
-        scrollToRoutineIndex(newIndex);
-      }
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const currentIndex = selectedRoutineIndex < 0 ? filteredRoutines.length : selectedRoutineIndex;
-      const newIndex = Math.max(currentIndex - 1, 0);
-      if (newIndex >= 0 && newIndex < filteredRoutines.length) {
-        handleRoutineClick(filteredRoutines[newIndex], newIndex);
-        scrollToRoutineIndex(newIndex);
-      }
-    } else if (e.key === 'Enter' && selectedRoutineIndex >= 0 && selectedRoutineIndex < filteredRoutines.length) {
-      e.preventDefault();
-      const routine = filteredRoutines[selectedRoutineIndex];
-      if (routine) {
-        handleRoutineClick(routine, selectedRoutineIndex);
-      }
-    }
-  };
-
-  const scrollToRoutineIndex = (index: number) => {
-    const listElement = routineListRef.current;
-    if (!listElement) return;
-    
-    const buttons = listElement.querySelectorAll('[data-routine-index]');
-    const targetButton = buttons[index] as HTMLElement;
-    if (targetButton) {
-      targetButton.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   };
 
@@ -245,8 +295,8 @@ export default function Home() {
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full flex flex-col lg:flex-row gap-4 p-4 md:p-6">
-          {/* Left Panel - Upload & Routines */}
-          <section className="flex flex-col w-full lg:w-1/4 gap-4" aria-label="File upload and routines">
+          {/* Left Panel - Upload & Tree View */}
+          <section className="flex flex-col w-full lg:w-2/5 xl:w-1/3 gap-4" aria-label="File upload and project structure">
             {/* File Upload */}
             <Card className="p-4">
               <input
@@ -321,328 +371,30 @@ export default function Home() {
               )}
             </Card>
 
-            {/* Routines List */}
+            {/* Tree View */}
             {parsedData && (
               <Card className="flex-1 flex flex-col overflow-hidden">
-                {/* Mobile collapsible header */}
-                <button
-                  onClick={() => setRoutinesExpanded(!routinesExpanded)}
-                  className="lg:hidden flex items-center justify-between p-4 border-b border-border hover-elevate active-elevate-2 w-full text-left"
-                  data-testid="button-toggle-routines"
-                  aria-expanded={routinesExpanded}
-                  aria-controls="routines-content"
-                >
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold text-foreground">Routines</h2>
-                    <Badge variant="outline" className="text-xs" data-testid="badge-routine-count">
-                      {filteredRoutines.length}
-                    </Badge>
-                  </div>
-                  {routinesExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </button>
-
-                {/* Desktop header (always visible) */}
-                <div className="hidden lg:block p-4 border-b border-border sticky top-0 bg-card z-10">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-foreground">Routines</h2>
-                    <Badge variant="outline" className="text-xs" data-testid="badge-routine-count-desktop">
-                      {filteredRoutines.length}
-                    </Badge>
-                  </div>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                    <Input
-                      type="search"
-                      placeholder="Search routines..."
-                      value={routineSearch}
-                      onChange={(e) => setRoutineSearch(e.target.value)}
-                      className="pl-9 pr-8 h-9"
-                      data-testid="input-search-routines"
-                      aria-label="Search routines"
-                    />
-                    {routineSearch && (
-                      <button
-                        onClick={() => setRoutineSearch("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        data-testid="button-clear-routine-search"
-                        aria-label="Clear search"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                <div className="p-4 border-b border-border sticky top-0 bg-card z-10">
+                  <h2 className="text-lg font-semibold text-foreground">Project Structure</h2>
                 </div>
-
-                {/* Collapsible content */}
-                <div
-                  id="routines-content"
-                  className={`${routinesExpanded ? 'flex' : 'hidden'} lg:flex flex-col flex-1 overflow-hidden`}
-                >
-                  {/* Mobile search (inside collapsible) */}
-                  <div className="lg:hidden p-4 border-b border-border">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                      <Input
-                        type="search"
-                        placeholder="Search routines..."
-                        value={routineSearch}
-                        onChange={(e) => setRoutineSearch(e.target.value)}
-                        className="pl-9 pr-8 h-9"
-                        data-testid="input-search-routines-mobile"
-                        aria-label="Search routines"
-                      />
-                      {routineSearch && (
-                        <button
-                          onClick={() => setRoutineSearch("")}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          data-testid="button-clear-routine-search-mobile"
-                          aria-label="Clear search"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div
-                    ref={routineListRef}
-                    className="flex-1 overflow-y-auto p-2"
-                    onKeyDown={handleRoutineListKeyDown}
-                    tabIndex={0}
-                    role="listbox"
-                    aria-label="Routine list"
-                    aria-activedescendant={
-                      selectedRoutineIndex >= 0
-                        ? `routine-option-${selectedRoutineIndex}`
-                        : undefined
-                    }
-                  >
-                    {filteredRoutines.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
-                        <FileText className="w-12 h-12 mb-2 opacity-50" />
-                        <div className="text-sm">No routines found</div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {filteredRoutines.map((routine, index) => (
-                          <button
-                            id={`routine-option-${index}`}
-                            key={`${routine.program}-${routine.name}-${index}`}
-                            onClick={() => handleRoutineClick(routine, index)}
-                            data-routine-index={index}
-                            className={`w-full text-left p-3 rounded-md transition-colors hover-elevate active-elevate-2 focus:outline-none focus:ring-2 focus:ring-ring min-h-[2.5rem] ${
-                              selectedRoutineIndex === index
-                                ? "bg-accent"
-                                : ""
-                            }`}
-                            data-testid={`button-routine-${index}`}
-                            role="option"
-                            aria-selected={selectedRoutineIndex === index}
-                          >
-                            <div className="font-medium text-sm text-foreground">
-                              {routine.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {routine.program}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                
+                <div className="flex-1 overflow-y-auto p-2">
+                  <TreeView 
+                    data={parsedData} 
+                    onRoutineClick={handleRoutineClick}
+                    selectedRoutine={selectedRoutine}
+                  />
                 </div>
               </Card>
             )}
           </section>
 
-          {/* Middle Panel - Tags */}
-          {parsedData && (
-            <section className="flex flex-col w-full lg:w-1/4 gap-4" aria-label="Tags">
-              <Card className="flex-1 flex flex-col overflow-hidden">
-                {/* Mobile collapsible header */}
-                <button
-                  onClick={() => setTagsExpanded(!tagsExpanded)}
-                  className="lg:hidden flex items-center justify-between p-4 border-b border-border hover-elevate active-elevate-2 w-full text-left"
-                  data-testid="button-toggle-tags"
-                  aria-expanded={tagsExpanded}
-                  aria-controls="tags-content"
-                >
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold text-foreground">Tags</h2>
-                    <Badge variant="outline" className="text-xs" data-testid="badge-tag-count">
-                      {filteredControllerTags.length + filteredProgramsWithTags.reduce((sum, p) => sum + p.tags.length, 0)}
-                    </Badge>
-                  </div>
-                  {tagsExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </button>
-
-                {/* Desktop header (always visible) */}
-                <div className="hidden lg:block p-4 border-b border-border sticky top-0 bg-card z-10">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-foreground">Tags</h2>
-                    <Badge variant="outline" className="text-xs" data-testid="badge-tag-count-desktop">
-                      {filteredControllerTags.length + filteredProgramsWithTags.reduce((sum, p) => sum + p.tags.length, 0)}
-                    </Badge>
-                  </div>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                    <Input
-                      type="search"
-                      placeholder="Search tags..."
-                      value={tagSearch}
-                      onChange={(e) => setTagSearch(e.target.value)}
-                      className="pl-9 pr-8 h-9"
-                      data-testid="input-search-tags"
-                      aria-label="Search tags"
-                    />
-                    {tagSearch && (
-                      <button
-                        onClick={() => setTagSearch("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        data-testid="button-clear-tag-search"
-                        aria-label="Clear search"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Collapsible content */}
-                <div
-                  id="tags-content"
-                  className={`${tagsExpanded ? 'flex' : 'hidden'} lg:flex flex-col flex-1 overflow-hidden`}
-                >
-                  {/* Mobile search (inside collapsible) */}
-                  <div className="lg:hidden p-4 border-b border-border">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                      <Input
-                        type="search"
-                        placeholder="Search tags..."
-                        value={tagSearch}
-                        onChange={(e) => setTagSearch(e.target.value)}
-                        className="pl-9 pr-8 h-9"
-                        data-testid="input-search-tags-mobile"
-                        aria-label="Search tags"
-                      />
-                      {tagSearch && (
-                        <button
-                          onClick={() => setTagSearch("")}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          data-testid="button-clear-tag-search-mobile"
-                          aria-label="Clear search"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto p-2" role="list">
-                    {filteredControllerTags.length === 0 && filteredProgramsWithTags.every(p => p.tags.length === 0) ? (
-                      <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
-                        <FileText className="w-12 h-12 mb-2 opacity-50" />
-                        <div className="text-sm">No tags found</div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {/* Controller Tags */}
-                        {filteredControllerTags.length > 0 && (
-                          <div>
-                            <div className="flex items-center gap-2 mb-2 px-2">
-                              <h3 className="text-sm font-semibold text-foreground">Controller Tags</h3>
-                              <Badge variant="secondary" className="text-xs">
-                                {filteredControllerTags.length}
-                              </Badge>
-                            </div>
-                            <div className="space-y-1">
-                              {filteredControllerTags.map((tag, index) => (
-                                <div
-                                  key={`controller-${tag}-${index}`}
-                                  className="px-3 py-2 text-sm text-foreground hover-elevate rounded-md"
-                                  data-testid={`text-controller-tag-${index}`}
-                                  role="listitem"
-                                >
-                                  {tag}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Program Tags (grouped by program) */}
-                        {filteredProgramsWithTags.map((program, pIndex) => (
-                          program.tags.length > 0 && (
-                            <div key={`program-tags-${program.name}-${pIndex}`}>
-                              <div className="flex items-center gap-2 mb-2 px-2">
-                                <h3 className="text-sm font-semibold text-foreground">{program.name} Tags</h3>
-                                <Badge variant="secondary" className="text-xs">
-                                  {program.tags.length}
-                                </Badge>
-                              </div>
-                              <div className="space-y-1">
-                                {program.tags.map((tag, index) => (
-                                  <div
-                                    key={`program-${program.name}-${tag}-${index}`}
-                                    className="px-3 py-2 rounded-md hover-elevate"
-                                    data-testid={`text-program-tag-${pIndex}-${index}`}
-                                    role="listitem"
-                                  >
-                                    <div className="text-sm text-foreground">{tag}</div>
-                                    <div className="text-xs text-muted-foreground">({program.name})</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            </section>
-          )}
-
           {/* Right Panel - XML Viewer */}
-          <section className="flex flex-col w-full lg:w-1/2 gap-4" aria-label="XML Viewer">
+          <section className="flex flex-col w-full lg:w-3/5 xl:w-2/3" aria-label="XML Viewer">
             <Card className="flex-1 flex flex-col overflow-hidden">
               {selectedRoutine ? (
                 <>
-                  {/* Mobile collapsible header */}
-                  <button
-                    onClick={() => setViewerExpanded(!viewerExpanded)}
-                    className="lg:hidden flex items-center justify-between p-4 border-b border-border hover-elevate active-elevate-2 w-full text-left"
-                    data-testid="button-toggle-viewer"
-                    aria-expanded={viewerExpanded}
-                    aria-controls="viewer-content"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <h2 className="text-lg font-semibold text-foreground truncate">
-                        {selectedRoutine.name}
-                      </h2>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {selectedRoutine.program}
-                      </p>
-                    </div>
-                    {viewerExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-muted-foreground ml-2 flex-shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-muted-foreground ml-2 flex-shrink-0" />
-                    )}
-                  </button>
-
-                  {/* Desktop header (always visible) */}
-                  <div className="hidden lg:flex p-4 border-b border-border items-center justify-between bg-card sticky top-0 z-10">
+                  <div className="flex p-4 border-b border-border items-center justify-between bg-card sticky top-0 z-10">
                     <div className="flex-1 min-w-0">
                       <h2 className="text-lg font-semibold text-foreground truncate">
                         {selectedRoutine.name}
@@ -672,35 +424,8 @@ export default function Home() {
                       )}
                     </Button>
                   </div>
-
-                  {/* Mobile copy button (inside collapsible) */}
-                  <div className={`${viewerExpanded ? 'flex' : 'hidden'} lg:hidden p-4 border-b border-border`}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCopyXML}
-                      disabled={!routineXML || loadingXML}
-                      className="w-full"
-                      data-testid="button-copy-xml-mobile"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="w-4 h-4 mr-2" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy
-                        </>
-                      )}
-                    </Button>
-                  </div>
                   
-                  <div
-                    id="viewer-content"
-                    className={`${viewerExpanded ? 'flex' : 'hidden'} lg:flex flex-1 overflow-auto bg-muted/30`}
-                  >
+                  <div className="flex-1 overflow-auto bg-muted/30">
                     {loadingXML ? (
                       <div className="flex items-center justify-center h-full w-full">
                         <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
@@ -725,7 +450,7 @@ export default function Home() {
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
                   <FileText className="w-16 h-16 mb-3 opacity-50" />
                   <div className="text-base font-medium">Select a routine to view XML</div>
-                  <div className="text-sm mt-1">Choose a routine from the list on the left</div>
+                  <div className="text-sm mt-1">Choose a routine from the project structure</div>
                 </div>
               )}
             </Card>
