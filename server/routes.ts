@@ -84,6 +84,82 @@ Please answer the user's question in a clear, helpful manner. Focus on practical
     }
   });
 
+  // AI Edit endpoint - Natural Language to JSON translator
+  app.post("/api/ai/edit", async (req, res) => {
+    try {
+      const { question, context } = req.body;
+
+      if (!question) {
+        return res.status(400).json({ error: "Question is required" });
+      }
+
+      const systemPrompt = `You are a silent code translation engine. Your only job is to translate a user's natural language request into a valid JSON object or an array of JSON objects that represent Rockwell ladder logic instructions.
+
+CRITICAL RULES:
+
+JSON ONLY: Your entire response must be only the raw JSON. DO NOT include any conversational text, explanations, markdown (like \`\`\`json), or apologies.
+
+MATCH THE STRUCTURE: The JSON you generate must match the exact structure our application's parser uses.
+
+ERROR HANDLING: If you cannot understand the request or it's invalid, you must respond with exactly this JSON: {"error": "Could not parse request."}
+
+EXAMPLES:
+
+Example 1:
+User: "add a rung with an XIC for 'Start' and an OTE for 'Motor'"
+Your Response: [{"type":"XIC","tag":"Start"},{"type":"OTE","tag":"Motor"}]
+
+Example 2:
+User: "add a MOV instruction to move the value 100 into 'MyDINT'"
+Your Response: [{"type":"MOV","source":"100","dest":"MyDINT"}]
+
+Example 3:
+User: "a branch with 'Auto' on top and 'Manual' on the bottom, then a 'Cycle_Run' output"
+Your Response: [{"type":"Branch","branches":[[{"type":"XIC","tag":"Auto"}],[{"type":"XIC","tag":"Manual"}]]},{"type":"OTE","tag":"Cycle_Run"}]
+
+CONTEXT: You will be given the full project's parsed JSON as context. Use it to validate that the tag names and routine names the user mentions are valid.`;
+
+      const userPrompt = `User's Request: ${question}
+
+${context?.fullProject ? `
+Full Project Context:
+Controller: ${context.fullProject.controllerName}
+Controller Tags: ${context.fullProject.controllerTags.slice(0, 50).join(', ')}${context.fullProject.controllerTags.length > 50 ? '...' : ''}
+Programs: ${context.fullProject.programs.map((p: any) => p.name).join(', ')}
+` : ''}
+
+${context?.currentRoutine ? `
+Currently Editing Routine:
+Program: ${context.currentRoutine.program}
+Routine: ${context.currentRoutine.name}
+${context.currentRoutine.rungs ? `
+Existing Rungs: ${context.currentRoutine.rungs.length}
+` : ''}
+` : ''}
+
+Generate only the JSON structure for the ladder logic instructions.`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.0,
+        max_tokens: 2000,
+      });
+
+      const response = completion.choices[0]?.message?.content || '{"error": "Could not parse request."}';
+
+      res.json({ response });
+    } catch (error) {
+      console.error("AI Edit Error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to get AI edit response' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
