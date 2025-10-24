@@ -4,6 +4,7 @@ import { parseL5X, type ParsedResult, type Program } from "@/utils/parser";
 import { extractRoutineXML } from "@/utils/xml-formatter";
 import { parseRung, extractRungs, type RungElement } from "@/utils/rllParser";
 import { RungRenderer } from "@/components/RungRenderer";
+import { ChatPanel } from "@/components/ChatPanel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -326,9 +327,9 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full flex flex-col lg:flex-row gap-4 p-4 md:p-6">
+        <div className="h-full grid grid-cols-1 xl:grid-cols-12 gap-4 p-4 md:p-6">
           {/* Left Panel - Upload & Tree View */}
-          <section className="flex flex-col w-full lg:w-2/5 xl:w-1/3 gap-4" aria-label="File upload and project structure">
+          <section className="flex flex-col xl:col-span-3 gap-4" aria-label="File upload and project structure">
             {/* File Upload */}
             <Card className="p-4">
               <input
@@ -421,8 +422,8 @@ export default function Home() {
             )}
           </section>
 
-          {/* Right Panel - Parsed Logic Viewer */}
-          <section className="flex flex-col w-full lg:w-3/5 xl:w-2/3" aria-label="Parsed Logic Viewer">
+          {/* Center Panel - Parsed Logic Viewer */}
+          <section className="flex flex-col xl:col-span-5" aria-label="Parsed Logic Viewer">
             <Card className="flex-1 flex flex-col overflow-hidden">
               {selectedRoutine ? (
                 <>
@@ -488,6 +489,18 @@ export default function Home() {
                 </div>
               )}
             </Card>
+          </section>
+
+          {/* Right Panel - AI Chat Assistant */}
+          <section className="flex flex-col xl:col-span-4" aria-label="AI Chat Assistant">
+            <ChatPanel 
+              fullProject={parsedData}
+              currentRoutine={selectedRoutine && parsedRungs ? {
+                program: selectedRoutine.program,
+                name: selectedRoutine.name,
+                rungs: parsedRungs
+              } : undefined}
+            />
           </section>
         </div>
       </div>

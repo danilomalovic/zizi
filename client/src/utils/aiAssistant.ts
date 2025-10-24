@@ -1,0 +1,36 @@
+export interface AIContext {
+  fullProject?: any;
+  currentRoutine?: {
+    program: string;
+    name: string;
+    rungs?: Array<{ number: number; text: string; parsed: any[] }>;
+  };
+}
+
+export async function getAIExplanation(
+  question: string,
+  context: AIContext
+): Promise<string> {
+  try {
+    const response = await fetch('/api/ai/ask', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ question, context }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `Request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.response || 'Sorry, I could not generate a response.';
+  } catch (error) {
+    console.error('AI Assistant Error:', error);
+    throw new Error(
+      `Failed to get AI response: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
