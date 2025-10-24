@@ -103,9 +103,9 @@ Preferred communication style: Simple, everyday language.
 
 **L5X File Processing:**
 - Client-side file upload and parsing (no server upload needed)
-- Extraction of routines from programs with name/location tracking
-- Controller-level and program-level tag extraction
-- XML routine viewer with syntax highlighting and formatting
+- Hierarchical extraction of controller name, programs, and routines
+- Parser returns structured object: `{ controllerName: string, programs: [{ name: string, routines: string[] }] }`
+- XML routine viewer with pretty-printing and formatting
 
 **User Interface:**
 - Three-panel layout: file upload/routines list, tags list, XML viewer

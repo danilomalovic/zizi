@@ -1,19 +1,13 @@
 import { XMLParser } from "fast-xml-parser";
 
-export interface Routine {
-  program: string;
+export interface Program {
   name: string;
-}
-
-export interface ProgramTag {
-  program: string;
-  name: string;
+  routines: string[];
 }
 
 export interface ParsedResult {
-  routines: Routine[];
-  controllerTags: string[];
-  programTags: ProgramTag[];
+  controllerName: string;
+  programs: Program[];
 }
 
 export interface ParsedError {
@@ -37,38 +31,19 @@ export function parseL5X(xml: string): ParsedResult | ParsedError {
     }
 
     const content = parsed.RSLogix5000Content;
-    const routines: Routine[] = [];
-    const controllerTags: string[] = [];
-    const programTags: ProgramTag[] = [];
+    
+    // Extract controller name
+    const controllerName = content.Controller?.Name || 'Unknown';
+    
+    const programs: Program[] = [];
 
-    // Extract controller tags
-    if (content.Controller?.Tags) {
-      const tags = Array.isArray(content.Controller.Tags)
-        ? content.Controller.Tags
-        : [content.Controller.Tags];
-      
-      for (const tagGroup of tags) {
-        const tagList = Array.isArray(tagGroup.Tag)
-          ? tagGroup.Tag
-          : tagGroup.Tag
-          ? [tagGroup.Tag]
-          : [];
-        
-        for (const tag of tagList) {
-          if (tag.Name) {
-            controllerTags.push(tag.Name);
-          }
-        }
-      }
-    }
-
-    // Extract programs, routines, and program tags
+    // Extract programs and their routines
     if (content.Controller?.Programs) {
-      const programs = Array.isArray(content.Controller.Programs)
+      const programGroups = Array.isArray(content.Controller.Programs)
         ? content.Controller.Programs
         : [content.Controller.Programs];
 
-      for (const programGroup of programs) {
+      for (const programGroup of programGroups) {
         const programList = Array.isArray(programGroup.Program)
           ? programGroup.Program
           : programGroup.Program
@@ -77,8 +52,9 @@ export function parseL5X(xml: string): ParsedResult | ParsedError {
 
         for (const program of programList) {
           const programName = program.Name || 'Unknown';
+          const routines: string[] = [];
 
-          // Extract routines
+          // Extract routines for this program
           if (program.Routines) {
             const routineGroups = Array.isArray(program.Routines)
               ? program.Routines
@@ -93,46 +69,23 @@ export function parseL5X(xml: string): ParsedResult | ParsedError {
 
               for (const routine of routineList) {
                 if (routine.Name) {
-                  routines.push({
-                    program: programName,
-                    name: routine.Name,
-                  });
+                  routines.push(routine.Name);
                 }
               }
             }
           }
 
-          // Extract program tags
-          if (program.Tags) {
-            const tagGroups = Array.isArray(program.Tags)
-              ? program.Tags
-              : [program.Tags];
-
-            for (const tagGroup of tagGroups) {
-              const tagList = Array.isArray(tagGroup.Tag)
-                ? tagGroup.Tag
-                : tagGroup.Tag
-                ? [tagGroup.Tag]
-                : [];
-
-              for (const tag of tagList) {
-                if (tag.Name) {
-                  programTags.push({
-                    program: programName,
-                    name: tag.Name,
-                  });
-                }
-              }
-            }
-          }
+          programs.push({
+            name: programName,
+            routines: routines,
+          });
         }
       }
     }
 
     return {
-      routines,
-      controllerTags,
-      programTags,
+      controllerName,
+      programs,
     };
   } catch (error) {
     return {
