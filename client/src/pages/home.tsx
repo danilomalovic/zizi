@@ -277,6 +277,41 @@ export default function Home() {
     });
   };
 
+  // Function to remove a rung from a specific routine (immutable update)
+  const removeRungFromRoutine = (
+    programName: string,
+    routineName: string,
+    rungNumber: number
+  ) => {
+    if (!parsedData) return;
+
+    // Deep copy the parsedData structure
+    const updatedData: ParsedResult = {
+      ...parsedData,
+      programs: parsedData.programs.map(program => {
+        if (program.name !== programName) return program;
+        
+        return {
+          ...program,
+          routines: program.routines.map(routine => {
+            if (routine.name !== routineName) return routine;
+            
+            return {
+              ...routine,
+              rungs: routine.rungs.filter(rung => rung.number !== rungNumber)
+            };
+          })
+        };
+      })
+    };
+
+    setParsedData(updatedData);
+    
+    toast({
+      description: `Removed rung ${rungNumber} from ${routineName}`,
+    });
+  };
+
   const handleRoutineClick = (programName: string, routineName: string) => {
     setSelectedRoutine({ program: programName, name: routineName });
   };
@@ -503,6 +538,7 @@ export default function Home() {
                 rungs: getCurrentRoutineRungs()!
               } : undefined}
               onAddRung={addRungToRoutine}
+              onRemoveRung={removeRungFromRoutine}
             />
           </section>
         </div>

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Loader2, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getAIExplanation, getAIEdit, type AIContext } from "@/utils/aiAssistant";
+import { getAIExplanation, getAIEdit, getAIRemove, type AIContext } from "@/utils/aiAssistant";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -20,9 +20,10 @@ interface ChatPanelProps {
     rungs?: Array<{ number: number; text: string; parsed: any[] }>;
   };
   onAddRung?: (programName: string, routineName: string, rung: { number: number; text: string; parsed: any[] }) => void;
+  onRemoveRung?: (programName: string, routineName: string, rungNumber: number) => void;
 }
 
-export function ChatPanel({ fullProject, currentRoutine, onAddRung }: ChatPanelProps) {
+export function ChatPanel({ fullProject, currentRoutine, onAddRung, onRemoveRung }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -57,18 +58,65 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung }: ChatPanelP
         currentRoutine,
       };
 
-      // Check if this is an /edit command
+      // Check for special commands
       const isEditCommand = inputText.trim().startsWith('/edit');
-      const question = isEditCommand 
-        ? inputText.trim().substring(5).trim() // Remove "/edit" and trim
-        : inputText;
+      const isRemoveCommand = inputText.trim().startsWith('/remove');
+      
+      let question = inputText;
+      if (isEditCommand) {
+        question = inputText.trim().substring(5).trim(); // Remove "/edit" and trim
+      } else if (isRemoveCommand) {
+        question = inputText.trim().substring(7).trim(); // Remove "/remove" and trim
+      }
 
       const response = isEditCommand
         ? await getAIEdit(question, context)
+        : isRemoveCommand
+        ? await getAIRemove(question, context)
         : await getAIExplanation(question, context);
 
-      // If this was an edit command, try to parse and add the rung
-      if (isEditCommand && onAddRung && currentRoutine) {
+      // Handle remove command
+      if (isRemoveCommand && onRemoveRung && currentRoutine) {
+        try {
+          // Parse the JSON response - expecting { rungNumber: number }
+          const parsed = JSON.parse(response);
+          
+          if (typeof parsed.rungNumber !== 'number') {
+            throw new Error('Expected rungNumber field in response');
+          }
+
+          // Remove the rung
+          onRemoveRung(currentRoutine.program, currentRoutine.name, parsed.rungNumber);
+
+          // Show success message
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: `✅ Successfully removed rung ${parsed.rungNumber} from ${currentRoutine.name}!`,
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, assistantMessage]);
+        } catch (parseError) {
+          toast({
+            variant: "destructive",
+            description: parseError instanceof Error 
+              ? `Failed to parse removal request: ${parseError.message}`
+              : "Invalid JSON response from AI",
+          });
+
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: `❌ Error: ${parseError instanceof Error ? parseError.message : 'Invalid JSON response'}\n\n${response}`,
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, assistantMessage]);
+        }
+      }
+      // Handle edit command - add new rung
+      else if (isEditCommand && onAddRung && currentRoutine) {
         try {
           // Parse the JSON response
           const parsed = JSON.parse(response);
@@ -186,10 +234,16 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung }: ChatPanelP
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <MessageSquare className="w-12 h-12 mb-3 opacity-50" />
             <div className="text-sm text-center max-w-xs">
-              <p className="font-medium mb-1">Welcome to Ask the PLC!</p>
-              <p className="text-xs">
-                I'm here to help you understand your ladder logic. Ask me anything about the routines, tags, or program structure.
+              <p className="font-medium mb-2">Welcome to Ask the PLC!</p>
+              <p className="text-xs mb-3">
+                I can help you learn, create, and edit your ladder logic.
               </p>
+              <div className="text-xs space-y-1 text-left bg-muted/50 p-2 rounded">
+                <p className="font-medium">Commands:</p>
+                <p>• Ask questions naturally</p>
+                <p>• <span className="font-mono">/edit</span> - Create new rungs</p>
+                <p>• <span className="font-mono">/remove</span> - Delete rungs</p>
+              </div>
             </div>
           </div>
         ) : (

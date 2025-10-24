@@ -84,6 +84,78 @@ Please answer the user's question in a clear, helpful manner. Focus on practical
     }
   });
 
+  // AI Remove endpoint - Natural Language to rung removal translator
+  app.post("/api/ai/remove", async (req, res) => {
+    try {
+      const { question, context } = req.body;
+
+      if (!question) {
+        return res.status(400).json({ error: "Question is required" });
+      }
+
+      const systemPrompt = `You are a silent code translation engine. Your only job is to translate a user's removal request into a JSON object indicating which rung to remove.
+
+CRITICAL RULES:
+
+JSON ONLY: Your entire response must be only raw JSON. DO NOT include any conversational text, explanations, markdown, or apologies.
+
+OUTPUT FORMAT: {"rungNumber": N} where N is the rung number to remove
+
+ERROR HANDLING: If you cannot determine which rung to remove, respond with: {"error": "Could not determine which rung to remove."}
+
+EXAMPLES:
+
+Example 1:
+User: "remove rung 0"
+Your Response: {"rungNumber": 0}
+
+Example 2:
+User: "delete the rung with ProgramTwoSINT.0"
+Context shows rung 0 has an OTE instruction for ProgramTwoSINT.0
+Your Response: {"rungNumber": 0}
+
+Example 3:
+User: "get rid of the XIO instruction"
+Context shows rung 0 has an XIO instruction
+Your Response: {"rungNumber": 0}
+
+CONTEXT: You will be given the current routine's rungs. Analyze them to determine which rung the user wants to remove based on their description.`;
+
+      const userPrompt = `User's Request: ${question}
+
+${context?.currentRoutine ? `
+Current Routine Context:
+Program: ${context.currentRoutine.program}
+Routine: ${context.currentRoutine.name}
+${context.currentRoutine.rungs ? `
+Rungs in this Routine:
+${context.currentRoutine.rungs.map((r: any) => `Rung ${r.number}: ${r.text}`).join('\n')}
+` : ''}
+` : ''}
+
+Determine which rung number to remove based on the user's request.`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.0,
+        max_tokens: 500,
+      });
+
+      const response = completion.choices[0]?.message?.content || '{"error": "Could not determine which rung to remove."}';
+
+      res.json({ response });
+    } catch (error) {
+      console.error("AI Remove Error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to get AI remove response' 
+      });
+    }
+  });
+
   // AI Edit endpoint - Natural Language to JSON translator
   app.post("/api/ai/edit", async (req, res) => {
     try {

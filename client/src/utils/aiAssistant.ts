@@ -62,3 +62,31 @@ export async function getAIEdit(
     );
   }
 }
+
+export async function getAIRemove(
+  question: string,
+  context: AIContext
+): Promise<string> {
+  try {
+    const response = await fetch('/api/ai/remove', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ question, context }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `Request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.response || '{"error": "Could not parse request."}';
+  } catch (error) {
+    console.error('AI Remove Error:', error);
+    throw new Error(
+      `Failed to get AI remove response: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}

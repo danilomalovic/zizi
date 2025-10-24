@@ -12,17 +12,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**October 24, 2025 - State Management Refactor for Editing:**
+**October 24, 2025 - Full CRUD Editing Capabilities:**
 - Refactored parser to perform deep parsing upfront instead of lazy parsing
 - Updated `ParsedResult` structure: Controller → Programs[] → Routines[] → Rungs[]
 - All rungs are now parsed during file upload and stored in deeply nested state
 - Removed `originalXML`, `parsedRungs`, and `loadingRungs` states from home.tsx
-- Added `addRungToRoutine()` function for immutable state updates
-- ChatPanel now parses `/edit` JSON responses and adds rungs to state automatically
-- Added JSON validation (array check, type field validation) before state updates
-- Improved error handling with toast notifications for parse failures
-- Edit mode now fully integrated: `/edit` commands create new rungs visible in the ladder viewer
-- Foundation in place for full ladder logic editing with visual feedback
+- Added `addRungToRoutine()` and `removeRungFromRoutine()` functions for immutable state updates
+- ChatPanel now supports three modes of operation:
+  - **Ask mode** (default): Natural language explanations of ladder logic
+  - **Edit mode** (`/edit`): Create new rungs from natural language
+  - **Remove mode** (`/remove`): Delete rungs by natural language description
+- Added `/api/ai/remove` endpoint for intelligent rung removal detection
+- AI can identify which rung to remove based on instruction type, tag name, or rung number
+- Added JSON validation for both edit and remove operations
+- Improved error handling with toast notifications for all operations
+- UI updated with helpful command guide in the chat welcome screen
+- Full ladder logic editing with visual feedback now operational
 
 ## System Architecture
 
@@ -93,7 +98,13 @@ Preferred communication style: Simple, everyday language.
     - Temperature: 0.0 for deterministic, consistent JSON output
     - Strict system prompt enforces JSON-only responses
     - Validates tag names and routine names against project context
-    - Foundation for future visual ladder editor
+    - Integrated with state management for live rung additions
+  - POST `/api/ai/remove` - Intelligent rung removal endpoint
+    - Accepts natural language removal requests
+    - Returns JSON with rung number to remove: `{"rungNumber": N}`
+    - Temperature: 0.0 for deterministic rung identification
+    - Analyzes rung context to identify target by description, instruction type, or tag name
+    - Integrated with state management for live rung deletion
 
 ### Data Storage Solutions
 
@@ -178,22 +189,30 @@ Preferred communication style: Simple, everyday language.
   - Automatic context passing (full project + currently selected routine)
   - Integrated with OpenAI GPT-4o via Replit AI Integrations
   - Backend API endpoints ensure secure API key management
-  - **Two Modes of Operation:**
-    - **Explanation Mode (default)**: Natural language responses with **🔧 Rung X:** formatting
+  - **Three Modes of Operation:**
+    - **Ask Mode (default)**: Natural language responses with **🔧 Rung X:** formatting
       - Uses `/api/ai/ask` endpoint with temperature 0.3
       - Returns conversational, friendly explanations of ladder logic
       - Answers questions about routines, tags, and program structure
-    - **Edit Mode (slash command)**: Natural language to JSON translator
+      - Example: "What does rung 0 do?" or "Explain this routine"
+    - **Edit Mode (slash command)**: Natural language to ladder logic creation
       - Activated by typing `/edit` before the request
       - Uses `/api/ai/edit` endpoint with temperature 0.0 for deterministic output
       - Returns ONLY raw JSON structures representing ladder logic instructions
       - System prompt enforces strict JSON-only responses (no markdown, no explanations)
-      - Example input: `/edit add a rung with an XIC for 'Start' and an OTE for 'Motor'`
-      - Example output: `[{"type":"XIC","tag":"Start"},{"type":"OTE","tag":"Motor"}]`
+      - Example: `/edit add a rung with an XIC for 'Start' and an OTE for 'Motor'`
       - Supports complex structures like branches, multi-parameter instructions, and nested logic
       - Automatically creates new rungs in the selected routine with immutable state updates
       - New rungs appear immediately in the visual ladder logic viewer
-      - Foundation for full ladder logic editing functionality
+    - **Remove Mode (slash command)**: Intelligent rung deletion
+      - Activated by typing `/remove` before the request
+      - Uses `/api/ai/remove` endpoint with temperature 0.0 for deterministic detection
+      - Returns JSON indicating which rung to remove: `{"rungNumber": N}`
+      - AI analyzes rung context to identify target based on description
+      - Example: `/remove the ProgramTwoSINT.0` or `/remove rung 0`
+      - Automatically removes the identified rung from the routine
+      - Deletion confirmed with toast notification and chat message
+  - Full CRUD capabilities: Learn, Create, and Delete ladder logic operations
 - Real-time file validation (L5X extension check)
 - Loading states and error handling with user feedback
 - Professional developer tool aesthetics matching VS Code/Linear design patterns
