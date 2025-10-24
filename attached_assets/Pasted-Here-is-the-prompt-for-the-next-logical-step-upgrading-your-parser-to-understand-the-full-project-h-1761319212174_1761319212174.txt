@@ -1,0 +1,64 @@
+Here is the prompt for the next logical step: upgrading your parser to understand the full project hierarchy. This is the "walk" phase we discussed, and it's the necessary foundation before you can build the visual editor.
+
+This prompt tells the AI to update your `parser.ts` file to output a structured JSON object that mirrors the project's hierarchy, based on the new, complex L5X file you provided.
+
+-----
+
+### Replit AI Prompt
+
+Hello, I need to make a major upgrade to our `src/parser.ts` file. The current parser is too simple and only returns flat lists of routines and tags. I need it to parse the full controller hierarchy from the L5X file.
+
+Please modify the `parseL5X` function to do the following:
+
+1.  Find the `Controller` tag and get its `Name` attribute.
+2.  Parse the **Controller-Scoped Tags** (the `<Tags>` directly inside `<Controller>`) and return an array of their `Name` attributes.
+3.  Parse the **Programs** (the `<Programs>` section). For each `<Program>` tag, you must:
+      * Get its `Name` attribute.
+      * Parse all **Program-Scoped Tags** (the `<Tags>` *inside* that `<Program>`) and get their names.
+      * Parse all **Routines** (the `<Routines>` *inside* that `<Program>`) and get their names.
+
+The function should now return a single, structured object. Based on the `L5x_Creation_Populated.L5X` file, the output object should look exactly like this:
+
+```json
+{
+  "controllerName": "L5x_Creation",
+  "controllerTags": [
+    "ControllerScopedDINT",
+    "ControllerScopedINT"
+  ],
+  "programs": [
+    {
+      "name": "MainProgram",
+      "tags": [
+        "MainProgBOOL"
+      ],
+      "routines": [
+        "MainProgramSubRoutine",
+        "MainRoutine"
+      ]
+    },
+    {
+      "name": "ProgramTwo",
+      "tags": [
+        "ProgramTwoBool",
+        "ProgramTwoSINT"
+      ],
+      "routines": [
+        "ProgramTwoMainRoutine"
+      ]
+    },
+    {
+      "name": "TaskTwoMainProg",
+      "tags": [
+        "TaskTwoMainBOOL",
+        "TaskTwoMainDINT"
+      ],
+      "routines": [
+        "MainRoutine"
+      ]
+    }
+  ]
+}
+```
+
+Please also update all the TypeScript type definitions (like `ParsedResult`) to match this new object structure. This is a critical step for our next UI update.

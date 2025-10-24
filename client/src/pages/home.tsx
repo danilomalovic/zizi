@@ -27,13 +27,13 @@ export default function Home() {
   const [loadingXML, setLoadingXML] = useState(false);
   
   const [routineSearch, setRoutineSearch] = useState("");
-  const [programSearch, setProgramSearch] = useState("");
+  const [tagSearch, setTagSearch] = useState("");
   
   const [copied, setCopied] = useState(false);
   
   // Mobile collapsible states
   const [routinesExpanded, setRoutinesExpanded] = useState(true);
-  const [programsExpanded, setProgramsExpanded] = useState(true);
+  const [tagsExpanded, setTagsExpanded] = useState(true);
   const [viewerExpanded, setViewerExpanded] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +60,7 @@ export default function Home() {
     setSelectedRoutineIndex(-1);
     setRoutineXML(null);
     setRoutineSearch("");
-    setProgramSearch("");
+    setTagSearch("");
 
     try {
       const text = await file.text();
@@ -144,15 +144,27 @@ export default function Home() {
     );
   }, [allRoutines, routineSearch]);
 
-  const filteredPrograms = useMemo(() => {
+  // Filter tags
+  const filteredControllerTags = useMemo(() => {
     if (!parsedData) return [];
-    if (!programSearch.trim()) return parsedData.programs;
+    if (!tagSearch.trim()) return parsedData.controllerTags;
     
-    const search = programSearch.toLowerCase();
-    return parsedData.programs.filter((p) =>
-      p.name.toLowerCase().includes(search)
-    );
-  }, [parsedData, programSearch]);
+    const search = tagSearch.toLowerCase();
+    return parsedData.controllerTags.filter((tag) => tag.toLowerCase().includes(search));
+  }, [parsedData, tagSearch]);
+
+  const filteredProgramsWithTags = useMemo(() => {
+    if (!parsedData) return [];
+    if (!tagSearch.trim()) return parsedData.programs;
+    
+    const search = tagSearch.toLowerCase();
+    return parsedData.programs
+      .map((program) => ({
+        ...program,
+        tags: program.tags.filter((tag) => tag.toLowerCase().includes(search)),
+      }))
+      .filter((program) => program.tags.length > 0 || program.name.toLowerCase().includes(search));
+  }, [parsedData, tagSearch]);
 
   // Reset selection when filtered routines change
   useEffect(() => {
@@ -212,6 +224,12 @@ export default function Home() {
   const getTotalRoutineCount = () => {
     if (!parsedData) return 0;
     return parsedData.programs.reduce((sum, p) => sum + p.routines.length, 0);
+  };
+
+  const getTotalTagCount = () => {
+    if (!parsedData) return 0;
+    const programTagCount = parsedData.programs.reduce((sum, p) => sum + p.tags.length, 0);
+    return parsedData.controllerTags.length + programTagCount;
   };
 
   return (
@@ -295,6 +313,9 @@ export default function Home() {
                   </Badge>
                   <Badge variant="secondary" className="text-xs">
                     {getTotalRoutineCount()} Routines
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    {getTotalTagCount()} Tags
                   </Badge>
                 </div>
               )}
@@ -438,25 +459,25 @@ export default function Home() {
             )}
           </section>
 
-          {/* Middle Panel - Programs */}
+          {/* Middle Panel - Tags */}
           {parsedData && (
-            <section className="flex flex-col w-full lg:w-1/4 gap-4" aria-label="Programs">
+            <section className="flex flex-col w-full lg:w-1/4 gap-4" aria-label="Tags">
               <Card className="flex-1 flex flex-col overflow-hidden">
                 {/* Mobile collapsible header */}
                 <button
-                  onClick={() => setProgramsExpanded(!programsExpanded)}
+                  onClick={() => setTagsExpanded(!tagsExpanded)}
                   className="lg:hidden flex items-center justify-between p-4 border-b border-border hover-elevate active-elevate-2 w-full text-left"
-                  data-testid="button-toggle-programs"
-                  aria-expanded={programsExpanded}
-                  aria-controls="programs-content"
+                  data-testid="button-toggle-tags"
+                  aria-expanded={tagsExpanded}
+                  aria-controls="tags-content"
                 >
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold text-foreground">Programs</h2>
-                    <Badge variant="outline" className="text-xs" data-testid="badge-program-count">
-                      {filteredPrograms.length}
+                    <h2 className="text-lg font-semibold text-foreground">Tags</h2>
+                    <Badge variant="outline" className="text-xs" data-testid="badge-tag-count">
+                      {filteredControllerTags.length + filteredProgramsWithTags.reduce((sum, p) => sum + p.tags.length, 0)}
                     </Badge>
                   </div>
-                  {programsExpanded ? (
+                  {tagsExpanded ? (
                     <ChevronUp className="w-5 h-5 text-muted-foreground" />
                   ) : (
                     <ChevronDown className="w-5 h-5 text-muted-foreground" />
@@ -466,27 +487,27 @@ export default function Home() {
                 {/* Desktop header (always visible) */}
                 <div className="hidden lg:block p-4 border-b border-border sticky top-0 bg-card z-10">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-foreground">Programs</h2>
-                    <Badge variant="outline" className="text-xs" data-testid="badge-program-count-desktop">
-                      {filteredPrograms.length}
+                    <h2 className="text-lg font-semibold text-foreground">Tags</h2>
+                    <Badge variant="outline" className="text-xs" data-testid="badge-tag-count-desktop">
+                      {filteredControllerTags.length + filteredProgramsWithTags.reduce((sum, p) => sum + p.tags.length, 0)}
                     </Badge>
                   </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <Input
                       type="search"
-                      placeholder="Search programs..."
-                      value={programSearch}
-                      onChange={(e) => setProgramSearch(e.target.value)}
+                      placeholder="Search tags..."
+                      value={tagSearch}
+                      onChange={(e) => setTagSearch(e.target.value)}
                       className="pl-9 pr-8 h-9"
-                      data-testid="input-search-programs"
-                      aria-label="Search programs"
+                      data-testid="input-search-tags"
+                      aria-label="Search tags"
                     />
-                    {programSearch && (
+                    {tagSearch && (
                       <button
-                        onClick={() => setProgramSearch("")}
+                        onClick={() => setTagSearch("")}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        data-testid="button-clear-program-search"
+                        data-testid="button-clear-tag-search"
                         aria-label="Clear search"
                       >
                         <X className="w-4 h-4" />
@@ -497,8 +518,8 @@ export default function Home() {
 
                 {/* Collapsible content */}
                 <div
-                  id="programs-content"
-                  className={`${programsExpanded ? 'flex' : 'hidden'} lg:flex flex-col flex-1 overflow-hidden`}
+                  id="tags-content"
+                  className={`${tagsExpanded ? 'flex' : 'hidden'} lg:flex flex-col flex-1 overflow-hidden`}
                 >
                   {/* Mobile search (inside collapsible) */}
                   <div className="lg:hidden p-4 border-b border-border">
@@ -506,18 +527,18 @@ export default function Home() {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <Input
                         type="search"
-                        placeholder="Search programs..."
-                        value={programSearch}
-                        onChange={(e) => setProgramSearch(e.target.value)}
+                        placeholder="Search tags..."
+                        value={tagSearch}
+                        onChange={(e) => setTagSearch(e.target.value)}
                         className="pl-9 pr-8 h-9"
-                        data-testid="input-search-programs-mobile"
-                        aria-label="Search programs"
+                        data-testid="input-search-tags-mobile"
+                        aria-label="Search tags"
                       />
-                      {programSearch && (
+                      {tagSearch && (
                         <button
-                          onClick={() => setProgramSearch("")}
+                          onClick={() => setTagSearch("")}
                           className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          data-testid="button-clear-program-search-mobile"
+                          data-testid="button-clear-tag-search-mobile"
                           aria-label="Clear search"
                         >
                           <X className="w-4 h-4" />
@@ -527,46 +548,62 @@ export default function Home() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-2" role="list">
-                    {filteredPrograms.length === 0 ? (
+                    {filteredControllerTags.length === 0 && filteredProgramsWithTags.every(p => p.tags.length === 0) ? (
                       <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
                         <FileText className="w-12 h-12 mb-2 opacity-50" />
-                        <div className="text-sm">No programs found</div>
+                        <div className="text-sm">No tags found</div>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        {filteredPrograms.map((program, index) => (
-                          <div
-                            key={`program-${program.name}-${index}`}
-                            className="p-3 rounded-md border border-border hover-elevate"
-                            data-testid={`card-program-${index}`}
-                            role="listitem"
-                          >
-                            <div className="font-medium text-sm text-foreground mb-2">
-                              {program.name}
-                            </div>
-                            <div className="flex items-center gap-2">
+                      <div className="space-y-4">
+                        {/* Controller Tags */}
+                        {filteredControllerTags.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-2 px-2">
+                              <h3 className="text-sm font-semibold text-foreground">Controller Tags</h3>
                               <Badge variant="secondary" className="text-xs">
-                                {program.routines.length} {program.routines.length === 1 ? 'Routine' : 'Routines'}
+                                {filteredControllerTags.length}
                               </Badge>
                             </div>
-                            {program.routines.length > 0 && (
-                              <div className="mt-2 space-y-1">
-                                {program.routines.slice(0, 3).map((routineName, rIndex) => (
+                            <div className="space-y-1">
+                              {filteredControllerTags.map((tag, index) => (
+                                <div
+                                  key={`controller-${tag}-${index}`}
+                                  className="px-3 py-2 text-sm text-foreground hover-elevate rounded-md"
+                                  data-testid={`text-controller-tag-${index}`}
+                                  role="listitem"
+                                >
+                                  {tag}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Program Tags (grouped by program) */}
+                        {filteredProgramsWithTags.map((program, pIndex) => (
+                          program.tags.length > 0 && (
+                            <div key={`program-tags-${program.name}-${pIndex}`}>
+                              <div className="flex items-center gap-2 mb-2 px-2">
+                                <h3 className="text-sm font-semibold text-foreground">{program.name} Tags</h3>
+                                <Badge variant="secondary" className="text-xs">
+                                  {program.tags.length}
+                                </Badge>
+                              </div>
+                              <div className="space-y-1">
+                                {program.tags.map((tag, index) => (
                                   <div
-                                    key={`${program.name}-${routineName}-${rIndex}`}
-                                    className="text-xs text-muted-foreground pl-2 border-l-2 border-muted"
+                                    key={`program-${program.name}-${tag}-${index}`}
+                                    className="px-3 py-2 rounded-md hover-elevate"
+                                    data-testid={`text-program-tag-${pIndex}-${index}`}
+                                    role="listitem"
                                   >
-                                    {routineName}
+                                    <div className="text-sm text-foreground">{tag}</div>
+                                    <div className="text-xs text-muted-foreground">({program.name})</div>
                                   </div>
                                 ))}
-                                {program.routines.length > 3 && (
-                                  <div className="text-xs text-muted-foreground pl-2">
-                                    + {program.routines.length - 3} more
-                                  </div>
-                                )}
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          )
                         ))}
                       </div>
                     )}
