@@ -5,11 +5,11 @@ interface RungRendererProps {
   rungNumber: number;
 }
 
-const GRID_SIZE = 60;
-const RAIL_HEIGHT = 40;
-const INSTRUCTION_WIDTH = 50;
-const INSTRUCTION_HEIGHT = 30;
-const BRANCH_SPACING = 50;
+const GRID_SIZE = 120;
+const RAIL_HEIGHT = 60;
+const INSTRUCTION_WIDTH = 80;
+const INSTRUCTION_HEIGHT = 40;
+const BRANCH_SPACING = 80;
 
 export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
   let xPosition = 0;
@@ -35,7 +35,7 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
         key={`line-to-${key}`}
         x1={x}
         y1={y}
-        x2={x + 20}
+        x2={x + 30}
         y2={y}
         stroke="currentColor"
         strokeWidth="2"
@@ -47,9 +47,9 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
       // XIC: Normally open contact | |
       elements.push(
         <g key={key}>
-          <line x1={x + 20} y1={y - 15} x2={x + 20} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <text x={x + 25} y={y - 20} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
+          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -58,10 +58,10 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
       // XIO: Normally closed contact |/|
       elements.push(
         <g key={key}>
-          <line x1={x + 20} y1={y - 15} x2={x + 20} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 20} y1={y + 15} x2={x + 30} y2={y - 15} stroke="currentColor" strokeWidth="2" />
-          <text x={x + 25} y={y - 20} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 30} y1={y + 15} x2={x + 45} y2={y - 15} stroke="currentColor" strokeWidth="2" />
+          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -70,12 +70,12 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
       // OTE: Output energize ( )
       elements.push(
         <g key={key}>
-          <line x1={x + 20} y1={y - 15} x2={x + 20} y2={y - 8} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 20} y1={y + 8} x2={x + 20} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 8} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 30} y1={y + 8} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <circle cx={x + 25} cy={y} r="8" stroke="currentColor" strokeWidth="2" fill="none" />
-          <text x={x + 25} y={y - 20} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 45} y1={y + 10} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
+          <circle cx={x + 37} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -84,15 +84,15 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
       // OTL: Output latch (L)
       elements.push(
         <g key={key}>
-          <line x1={x + 20} y1={y - 15} x2={x + 20} y2={y - 8} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 20} y1={y + 8} x2={x + 20} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 8} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 30} y1={y + 8} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <circle cx={x + 25} cy={y} r="8" stroke="currentColor" strokeWidth="2" fill="none" />
-          <text x={x + 25} y={y + 3} textAnchor="middle" fontSize="10" fill="currentColor" className="font-bold">
+          <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 45} y1={y + 10} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
+          <circle cx={x + 37} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+          <text x={x + 37} y={y + 4} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             L
           </text>
-          <text x={x + 25} y={y - 20} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -101,15 +101,15 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
       // OTU: Output unlatch (U)
       elements.push(
         <g key={key}>
-          <line x1={x + 20} y1={y - 15} x2={x + 20} y2={y - 8} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 20} y1={y + 8} x2={x + 20} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 8} stroke="currentColor" strokeWidth="2" />
-          <line x1={x + 30} y1={y + 8} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <circle cx={x + 25} cy={y} r="8" stroke="currentColor" strokeWidth="2" fill="none" />
-          <text x={x + 25} y={y + 3} textAnchor="middle" fontSize="10" fill="currentColor" className="font-bold">
+          <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
+          <line x1={x + 45} y1={y + 10} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
+          <circle cx={x + 37} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+          <text x={x + 37} y={y + 4} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             U
           </text>
-          <text x={x + 25} y={y - 20} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -123,21 +123,21 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
       elements.push(
         <g key={key}>
           <rect
-            x={x + 20}
-            y={y - 20}
-            width={60}
-            height={40}
+            x={x + 30}
+            y={y - 25}
+            width={80}
+            height={50}
             stroke="currentColor"
             strokeWidth="2"
             fill="none"
           />
-          <text x={x + 50} y={y - 5} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
+          <text x={x + 70} y={y - 8} textAnchor="middle" fontSize="12" fill="currentColor" className="font-bold">
             {label}
           </text>
-          <text x={x + 50} y={y + 8} textAnchor="middle" fontSize="9" fill="currentColor" className="font-mono">
+          <text x={x + 70} y={y + 6} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {source}
           </text>
-          <text x={x + 50} y={y + 18} textAnchor="middle" fontSize="9" fill="currentColor" className="font-mono">
+          <text x={x + 70} y={y + 18} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {dest}
           </text>
         </g>
@@ -147,17 +147,17 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
       elements.push(
         <line
           key={`line-after-${key}`}
-          x1={x + 80}
+          x1={x + 110}
           y1={y}
-          x2={x + 100}
+          x2={x + GRID_SIZE}
           y2={y}
           stroke="currentColor"
           strokeWidth="2"
         />
       );
       
-      xPosition += 100;
-      return { width: 100, height: 40 };
+      xPosition += GRID_SIZE;
+      return { width: GRID_SIZE, height: 50 };
     } else {
       // Generic instruction - draw as a box
       elements.push(
@@ -182,7 +182,7 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
     elements.push(
       <line
         key={`line-after-${key}`}
-        x1={x + 30}
+        x1={x + 45}
         y1={y}
         x2={x + GRID_SIZE}
         y2={y}
