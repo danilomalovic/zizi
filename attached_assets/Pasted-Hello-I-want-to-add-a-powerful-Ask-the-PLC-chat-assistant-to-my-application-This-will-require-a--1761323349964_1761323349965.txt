@@ -1,0 +1,63 @@
+Hello, I want to add a powerful "Ask the PLC" chat assistant to my application. This will require a new layout and a new AI module.
+
+1. Update the Main Layout in App.tsx:
+
+Change the main application layout to be a three-column grid:
+
+ProjectTree component (the one we already built).
+
+LogicViewer component (the one with the SVG rungs).
+
+A new ChatPanel component.
+
+The App component will need to pass two props to the new ChatPanel:
+
+The entire parsedResult object (the full project tree).
+
+The parsed JSON of the currently selected routine (the same data you are passing to the LogicViewer).
+
+2. Create the new ChatPanel.tsx Component:
+
+This component must have its own state to manage a list of messages (the chat history) and the user's current text in the input box.
+
+The UI must contain three parts:
+
+A header (e.g., "Ask the PLC").
+
+A scrollable message history area.
+
+A text input box at the bottom with a "Send" button.
+
+3. Create a new src/aiAssistant.ts file:
+
+Inside this file, create one async function: getAIExplanation.
+
+This function will take two arguments: (question: string, context: object).
+
+Inside this function, you will call the LLM (Gemini or OpenAI). You must add your own API key for this to work.
+
+The prompt you send to the LLM must be very specific. It must combine the user's question with the context we passed in. Use a prompt like this:
+
+"You are 'Ask the PLC,' an expert Rockwell Automation programmer. A user is looking at a routine and has a question.
+
+User's Question: {question}
+
+Full Project Context (Tags & Routines): {JSON.stringify(context, null, 2)}
+
+Please answer the user's question in plain English. Be clear, concise, and helpful."
+
+4. Connect it all in ChatPanel.tsx:
+
+When the user clicks the "Send" button:
+
+Add the user's message to the chat history (so it appears immediately).
+
+Call the getAIExplanation function, passing in:
+
+question: The user's text from the input box.
+
+context: The props you received from App.tsx (the parsedResult and currentRoutine JSON).
+
+When the AI's response comes back, add this new message to the chat history.
+
+This plan will create a fully functional chat bot that has all the project context it needs to intelligently answer questions about any routine in the file.
