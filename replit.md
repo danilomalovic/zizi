@@ -108,10 +108,12 @@ Preferred communication style: Simple, everyday language.
 - Extracts controller-scoped tags and program-scoped tags
 - **RLL (Relay Ladder Logic) Parser:**
   - Parses ladder logic rung text into JSON syntax trees
-  - Handles basic instructions (XIC, OTE, etc.)
-  - Supports nested branches `[...]` and parallel branches (commas)
+  - Handles basic instructions (XIC, OTE, etc.) with single parameters
+  - Handles multi-parameter instructions (MOV, etc.) with source/dest fields
+  - Fully supports nested branches `[...]` and parallel branches (comma-separated)
+  - Respects parentheses depth when parsing comma-separated parameters
   - Preserves PLC rung numbering from XML
-  - Example: `XIC(TagA)OTE(TagB);` → `[{type: "XIC", tag: "TagA"}, {type: "OTE", tag: "TagB"}]`
+  - Example: `[XIC(Tag.0),XIC(Tag.1)]MOV(32,Dest);` → Branch structure with parallel paths and MOV instruction
 
 **User Interface:**
 - Two-panel layout: left panel (tree view + file upload), right panel (parsed logic viewer)

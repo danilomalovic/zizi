@@ -1,13 +1,14 @@
 export interface Instruction {
   type: string;
   tag?: string;
-  operand?: string;
+  source?: string;
+  dest?: string;
   [key: string]: any;
 }
 
 export interface Branch {
   type: "Branch";
-  branches: Instruction[][];
+  branches: RungElement[][];
 }
 
 export type RungElement = Instruction | Branch;
@@ -16,19 +17,17 @@ export function parseRung(rungText: string): RungElement[] {
   // Remove trailing semicolon and whitespace
   const text = rungText.trim().replace(/;$/, '');
   
-  const result: RungElement[] = [];
   let index = 0;
 
-  function parseElements(endChar?: string): RungElement[] {
+  function parseElements(): RungElement[] {
     const elements: RungElement[] = [];
 
     while (index < text.length) {
-      const char = text[index];
+      skipWhitespace();
+      
+      if (index >= text.length) break;
 
-      // Check for end of current context
-      if (endChar && char === endChar) {
-        return elements;
-      }
+      const char = text[index];
 
       // Handle branches
       if (char === '[') {
@@ -51,21 +50,25 @@ export function parseRung(rungText: string): RungElement[] {
   }
 
   function parseBranch(): Branch {
-    const branches: Instruction[][] = [];
-    let currentBranch: Instruction[] = [];
+    const branches: RungElement[][] = [];
+    let currentBranch: RungElement[] = [];
 
     while (index < text.length) {
+      skipWhitespace();
+      
+      if (index >= text.length) break;
+
       const char = text[index];
 
       if (char === ']') {
-        // End of branch
+        // End of branch - save current branch if it has content
         if (currentBranch.length > 0) {
           branches.push(currentBranch);
         }
         index++; // Skip ']'
         break;
       } else if (char === ',') {
-        // New parallel branch
+        // Parallel branch separator - save current branch and start new one
         if (currentBranch.length > 0) {
           branches.push(currentBranch);
         }
@@ -77,7 +80,7 @@ export function parseRung(rungText: string): RungElement[] {
         const nestedBranch = parseBranch();
         currentBranch.push(nestedBranch);
       } else {
-        // Parse instruction
+        // Parse instruction within branch
         const instruction = parseInstruction();
         if (instruction) {
           currentBranch.push(instruction);
@@ -94,28 +97,95 @@ export function parseRung(rungText: string): RungElement[] {
   }
 
   function parseInstruction(): Instruction | null {
-    // Skip whitespace
-    while (index < text.length && /\s/.test(text[index])) {
-      index++;
-    }
+    skipWhitespace();
 
     if (index >= text.length) return null;
 
-    // Try to match instruction pattern: INSTRUCTION(operand)
-    const match = text.slice(index).match(/^([A-Z]+)\(([^)]*)\)/);
+    // Try to match instruction pattern: INSTRUCTION(params)
+    const instructionMatch = text.slice(index).match(/^([A-Z_]+)\(/);
     
-    if (match) {
-      const instructionType = match[1];
-      const operand = match[2];
-      index += match[0].length;
+    if (!instructionMatch) return null;
 
+    const instructionType = instructionMatch[1];
+    index += instructionMatch[0].length; // Move past "INSTRUCTION("
+
+    // Parse parameters inside parentheses
+    const params = parseParameters();
+
+    // Create instruction object based on type
+    if (instructionType === 'MOV' && params.length === 2) {
       return {
         type: instructionType,
-        tag: operand
+        source: params[0],
+        dest: params[1]
+      };
+    } else if (params.length === 1) {
+      // Single parameter instructions (XIC, OTE, etc.)
+      return {
+        type: instructionType,
+        tag: params[0]
+      };
+    } else if (params.length === 2) {
+      // Generic two-parameter instruction
+      return {
+        type: instructionType,
+        source: params[0],
+        dest: params[1]
+      };
+    } else {
+      // Generic multi-parameter instruction
+      return {
+        type: instructionType,
+        params: params
       };
     }
+  }
 
-    return null;
+  function parseParameters(): string[] {
+    const params: string[] = [];
+    let currentParam = '';
+    let depth = 0;
+
+    while (index < text.length) {
+      const char = text[index];
+
+      if (char === '(') {
+        depth++;
+        currentParam += char;
+        index++;
+      } else if (char === ')') {
+        if (depth === 0) {
+          // End of parameter list
+          if (currentParam.trim()) {
+            params.push(currentParam.trim());
+          }
+          index++; // Skip ')'
+          break;
+        } else {
+          depth--;
+          currentParam += char;
+          index++;
+        }
+      } else if (char === ',' && depth === 0) {
+        // Parameter separator
+        if (currentParam.trim()) {
+          params.push(currentParam.trim());
+        }
+        currentParam = '';
+        index++;
+      } else {
+        currentParam += char;
+        index++;
+      }
+    }
+
+    return params;
+  }
+
+  function skipWhitespace() {
+    while (index < text.length && /\s/.test(text[index])) {
+      index++;
+    }
   }
 
   return parseElements();
