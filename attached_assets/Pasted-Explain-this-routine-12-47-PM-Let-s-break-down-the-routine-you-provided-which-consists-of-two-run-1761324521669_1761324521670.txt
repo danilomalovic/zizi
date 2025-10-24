@@ -1,0 +1,47 @@
+Explain this routine
+12:47 PM
+Let's break down the routine you provided, which consists of two rungs in the "MainRoutine" of the "MainProgram."
+
+### Rung 0: JSR Instruction
+**Instruction:** `JSR(MainProgramSubRoutine,0);`
+
+- **Type:** JSR (Jump to SubRoutine)
+- **Source:** `MainProgramSubRoutine`
+- **Destination:** `0` (This is the return address)
+
+**Explanation:**
+The JSR instruction is used to call a subroutine, which allows you to execute a separate section of code (in this case, `MainProgramSubRoutine`). When this rung is executed, the program will jump to the specified subroutine, execute it, and then return to continue execution from the next rung in the main routine. This is useful for organizing code into manageable sections and for reusing code without duplicating it. 
+
+### Rung 1: LIM and OTE Instructions
+**Instruction:** `LIM(23,ControllerScopedDINT,56)OTE(Local:3:O.Data.8);`
+
+- **Type 1:** LIM (Limit Test)
+  - **Parameters:**
+    - Lower Limit: `23`
+    - Tag: `ControllerScopedDINT`
+    - Upper Limit: `56`
+  
+- **Type 2:** OTE (Output Energize)
+  - **Tag:** `Local:3:O.Data.8`
+
+**Explanation:**
+This rung performs two actions:
+
+1. **LIM Instruction:**
+   - The LIM instruction checks if the value of `ControllerScopedDINT` is within the specified limits, which are 23 (lower limit) and 56 (upper limit). 
+   - If the value of `ControllerScopedDINT` is greater than or equal to 23 and less than or equal to 56, the condition evaluates to true.
+
+2. **OTE Instruction:**
+   - The OTE instruction will energize the output at `Local:3:O.Data.8` if the condition from the LIM instruction is true. 
+   - In practical terms, if `ControllerScopedDINT` is within the specified limits, then `Local:3:O.Data.8` will be set to a logic high (1); otherwise, it will remain off (0).
+
+### Summary:
+- The first rung calls a subroutine, allowing for modular programming.
+- The second rung checks if a certain controller-scoped DINT value falls within a specific range and sets an output accordingly.
+
+### Best Practices:
+- Make sure that the subroutine is designed efficiently to avoid unnecessary execution time.
+- Ensure that the limits in the LIM instruction are appropriate for the expected range of `ControllerScopedDINT` to avoid unexpected behavior.
+- It can be beneficial to comment on your rungs to clarify their purpose for future reference or for other programmers who may work on the project.
+
+If you have any further questions about this routine or need clarification on specific parts, feel free to ask!
