@@ -1,0 +1,72 @@
+Hello, to build our "edit" feature, we must first do a major refactor of our state management. We need to make our app load all logic from the L5X file at the very beginning, not just when a routine is clicked. This will be our "single source of truth" that we can finally edit.
+
+This will be a 3-part change:
+
+1. Upgrade src/parser.ts
+First, we need to make our main parseL5X function go much deeper.
+
+When parseL5X finds a <Routine>, it must no longer just get the name. It must immediately parse its <RLLContent>.
+
+For each <Rung> inside, it must get the number, the raw text, and the parsed JSON (by calling our existing parseRung function from rllParser.ts).
+
+The routines array in our ParsedResult will no longer be an array of strings. It must be an array of objects.
+
+Please update the TypeScript type definitions in parser.ts to match this new, deep structure:
+
+TypeScript
+
+// These are the new types for our parser.ts
+interface Rung {
+  number: number;
+  text: string;
+  parsed: object[]; // The JSON from rllParser.ts
+}
+
+interface Routine {
+  name: string;
+  rungs: Rung[];
+}
+
+interface Program {
+  name: string;
+  tags: string[];
+  routines: Routine[]; // This is the change
+}
+
+// Our main ParsedResult type now uses these new interfaces
+interface ParsedResult {
+  controllerName: string;
+  controllerTags: string[];
+  programs: Program[];
+}
+This is the most important part. The parseL5X function must now call parseRung for every single rung in the file and build this new, deep object.
+
+2. Simplify App.tsx and LogicViewer
+Now that our parsedResult state contains all the parsed logic, we can simplify our other components.
+
+In App.tsx, when a user clicks a routine in the ProjectTree, our click handler becomes much simpler. We no longer need to find the raw XML or call DOMParser.
+
+The LogicViewer component's props should change. Instead of just getting a routine name, it should now receive the Rung[] array for the selected routine (e.g., selectedRoutine.rungs).
+
+The LogicViewer will then just map over this rungs array and pass each rung.parsed object to the RungRenderer component.
+
+This change makes our app much cleaner and removes all the "on-the-fly" parsing.
+
+3. Create the Edit Function in App.tsx
+Finally, with this new state structure, we can create the function that modifies our project. In App.tsx, please create a new function:
+
+function addRungToRoutine(programName: string, routineName: string, newRungJson: object[])
+
+This function must:
+
+Create a deep copy of the main parsedResult state object.
+
+Find the correct program (programName) and routine (routineName) within that copy.
+
+Create a new Rung object for the new logic. Use number: [last_rung_number + 1], text: "[AI Generated Rung]", and parsed: newRungJson.
+
+Immutably add this new Rung object to the end of that routine's rungs array.
+
+Call setParsedResult with this new, modified state object.
+
+To connect this for testing, update ChatPanel.tsx. When our /edit command gets a valid JSON array back from getAIEdit, it should now call this new addRungToRoutine function. This will make our AI chat command actually add the new rung to the end of the currently selected routine, and the UI will update instantly.
