@@ -242,6 +242,41 @@ export default function Home() {
     return routine?.rungs || null;
   };
 
+  // Function to add a rung to a specific routine (immutable update)
+  const addRungToRoutine = (
+    programName: string, 
+    routineName: string, 
+    newRung: { number: number; text: string; parsed: any[] }
+  ) => {
+    if (!parsedData) return;
+
+    // Deep copy the parsedData structure
+    const updatedData: ParsedResult = {
+      ...parsedData,
+      programs: parsedData.programs.map(program => {
+        if (program.name !== programName) return program;
+        
+        return {
+          ...program,
+          routines: program.routines.map(routine => {
+            if (routine.name !== routineName) return routine;
+            
+            return {
+              ...routine,
+              rungs: [...routine.rungs, newRung]
+            };
+          })
+        };
+      })
+    };
+
+    setParsedData(updatedData);
+    
+    toast({
+      description: `Added rung ${newRung.number} to ${routineName}`,
+    });
+  };
+
   const handleRoutineClick = (programName: string, routineName: string) => {
     setSelectedRoutine({ program: programName, name: routineName });
   };
@@ -467,6 +502,7 @@ export default function Home() {
                 name: selectedRoutine.name,
                 rungs: getCurrentRoutineRungs()!
               } : undefined}
+              onAddRung={addRungToRoutine}
             />
           </section>
         </div>

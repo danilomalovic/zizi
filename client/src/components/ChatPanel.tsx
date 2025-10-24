@@ -19,9 +19,10 @@ interface ChatPanelProps {
     name: string;
     rungs?: Array<{ number: number; text: string; parsed: any[] }>;
   };
+  onAddRung?: (programName: string, routineName: string, rung: { number: number; text: string; parsed: any[] }) => void;
 }
 
-export function ChatPanel({ fullProject, currentRoutine }: ChatPanelProps) {
+export function ChatPanel({ fullProject, currentRoutine, onAddRung }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -66,14 +67,58 @@ export function ChatPanel({ fullProject, currentRoutine }: ChatPanelProps) {
         ? await getAIEdit(question, context)
         : await getAIExplanation(question, context);
 
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-      };
+      // If this was an edit command, try to parse and add the rung
+      if (isEditCommand && onAddRung && currentRoutine) {
+        try {
+          // Parse the JSON response
+          const parsed = JSON.parse(response);
+          
+          // Calculate the next rung number
+          const nextRungNumber = currentRoutine.rungs 
+            ? Math.max(...currentRoutine.rungs.map(r => r.number), 0) + 1
+            : 0;
 
-      setMessages(prev => [...prev, assistantMessage]);
+          // Create the new rung
+          const newRung = {
+            number: nextRungNumber,
+            text: `Generated from: ${question}`,
+            parsed: parsed,
+          };
+
+          // Add the rung to the routine
+          onAddRung(currentRoutine.program, currentRoutine.name, newRung);
+
+          // Show a success message instead of the raw JSON
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: `✅ Successfully added rung ${nextRungNumber} to ${currentRoutine.name}!\n\nThe new ladder logic has been added to the routine.`,
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, assistantMessage]);
+        } catch (parseError) {
+          // If parsing fails, show the response as-is (it might be an error message)
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: response,
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, assistantMessage]);
+        }
+      } else {
+        // Normal explanation message
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: response,
+          timestamp: new Date(),
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+      }
     } catch (error) {
       toast({
         variant: "destructive",
