@@ -1,8 +1,6 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown } from "lucide-react";
-import { parseL5X, type ParsedResult, type Program } from "@/utils/parser";
-import { extractRoutineXML } from "@/utils/xml-formatter";
-import { parseRung, extractRungs, type RungElement } from "@/utils/rllParser";
+import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, ChevronRight, ChevronDown } from "lucide-react";
+import { parseL5X, type ParsedResult } from "@/utils/parser";
 import { RungRenderer } from "@/components/RungRenderer";
 import { ChatPanel } from "@/components/ChatPanel";
 import { Button } from "@/components/ui/button";
@@ -157,13 +155,13 @@ function TreeView({ data, onRoutineClick, selectedRoutine }: TreeViewProps) {
                 >
                   {program.routines.map((routine, rIndex) => (
                     <TreeNode
-                      key={`routine-${program.name}-${routine}-${rIndex}`}
-                      label={routine}
-                      onClick={() => onRoutineClick(program.name, routine)}
+                      key={`routine-${program.name}-${routine.name}-${rIndex}`}
+                      label={routine.name}
+                      onClick={() => onRoutineClick(program.name, routine.name)}
                       isClickable={true}
                       isSelected={
                         selectedRoutine?.program === program.name &&
-                        selectedRoutine?.name === routine
+                        selectedRoutine?.name === routine.name
                       }
                       level={4}
                     />
@@ -184,11 +182,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
-  const [originalXML, setOriginalXML] = useState<string>("");
   
   const [selectedRoutine, setSelectedRoutine] = useState<{ program: string; name: string } | null>(null);
-  const [parsedRungs, setParsedRungs] = useState<Array<{ number: number; text: string; parsed: RungElement[] }> | null>(null);
-  const [loadingRungs, setLoadingRungs] = useState(false);
   
   const [copied, setCopied] = useState(false);
   
@@ -212,11 +207,9 @@ export default function Home() {
     setError(null);
     setParsedData(null);
     setSelectedRoutine(null);
-    setParsedRungs(null);
 
     try {
       const text = await file.text();
-      setOriginalXML(text);
       
       const result = parseL5X(text);
       
@@ -238,52 +231,27 @@ export default function Home() {
     }
   };
 
+  // Helper function to get rungs for the currently selected routine
+  const getCurrentRoutineRungs = () => {
+    if (!parsedData || !selectedRoutine) return null;
+    
+    const program = parsedData.programs.find(p => p.name === selectedRoutine.program);
+    if (!program) return null;
+    
+    const routine = program.routines.find(r => r.name === selectedRoutine.name);
+    return routine?.rungs || null;
+  };
+
   const handleRoutineClick = (programName: string, routineName: string) => {
     setSelectedRoutine({ program: programName, name: routineName });
-    setLoadingRungs(true);
-    
-    // Simulate async operation for better UX
-    setTimeout(() => {
-      // Extract the routine XML
-      const xml = extractRoutineXML(originalXML, programName, routineName);
-      
-      if (xml) {
-        // Extract rungs from the XML
-        const rungs = extractRungs(xml);
-        
-        // Parse each rung
-        const parsedRungsData = rungs.map(rung => {
-          try {
-            const parsed = parseRung(rung.text);
-            return {
-              number: rung.number,
-              text: rung.text,
-              parsed: parsed
-            };
-          } catch (error) {
-            console.error(`Error parsing rung ${rung.number}:`, error);
-            return {
-              number: rung.number,
-              text: rung.text,
-              parsed: []
-            };
-          }
-        });
-        
-        setParsedRungs(parsedRungsData);
-      } else {
-        setParsedRungs(null);
-      }
-      
-      setLoadingRungs(false);
-    }, 100);
   };
 
   const handleCopyJSON = async () => {
-    if (!parsedRungs) return;
+    const rungs = getCurrentRoutineRungs();
+    if (!rungs) return;
     
     try {
-      const jsonOutput = JSON.stringify(parsedRungs, null, 2);
+      const jsonOutput = JSON.stringify(rungs, null, 2);
       await navigator.clipboard.writeText(jsonOutput);
       setCopied(true);
       toast({
@@ -440,7 +408,7 @@ export default function Home() {
                       size="sm"
                       variant="outline"
                       onClick={handleCopyJSON}
-                      disabled={!parsedRungs || loadingRungs}
+                      disabled={!getCurrentRoutineRungs()}
                       className="ml-4 flex-shrink-0"
                       data-testid="button-copy-json"
                     >
@@ -459,26 +427,25 @@ export default function Home() {
                   </div>
                   
                   <div className="flex-1 overflow-auto bg-muted/30 min-h-0">
-                    {loadingRungs ? (
-                      <div className="flex items-center justify-center h-full w-full">
-                        <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
-                      </div>
-                    ) : parsedRungs && parsedRungs.length > 0 ? (
-                      <div className="p-4 space-y-4">
-                        {parsedRungs.map((rung) => (
-                          <RungRenderer
-                            key={rung.number}
-                            parsed={rung.parsed}
-                            rungNumber={rung.number}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full w-full text-muted-foreground p-6">
-                        <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
-                        <div className="text-sm">No rungs found in this routine</div>
-                      </div>
-                    )}
+                    {(() => {
+                      const rungs = getCurrentRoutineRungs();
+                      return rungs && rungs.length > 0 ? (
+                        <div className="p-4 space-y-4">
+                          {rungs.map((rung) => (
+                            <RungRenderer
+                              key={rung.number}
+                              parsed={rung.parsed}
+                              rungNumber={rung.number}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full w-full text-muted-foreground p-6">
+                          <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
+                          <div className="text-sm">No rungs found in this routine</div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </>
               ) : (
@@ -495,10 +462,10 @@ export default function Home() {
           <section className="flex flex-col h-full xl:col-span-4 min-h-0" aria-label="AI Chat Assistant">
             <ChatPanel 
               fullProject={parsedData}
-              currentRoutine={selectedRoutine && parsedRungs ? {
+              currentRoutine={selectedRoutine && getCurrentRoutineRungs() ? {
                 program: selectedRoutine.program,
                 name: selectedRoutine.name,
-                rungs: parsedRungs
+                rungs: getCurrentRoutineRungs()!
               } : undefined}
             />
           </section>
