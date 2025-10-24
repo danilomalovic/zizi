@@ -12,7 +12,7 @@ const INSTRUCTION_HEIGHT = 40;
 const BRANCH_SPACING = 80;
 
 export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
-  let xPosition = 0;
+  let xPosition = 40; // Start with offset for left margin
   const elements: JSX.Element[] = [];
   let maxY = RAIL_HEIGHT;
 
@@ -45,71 +45,76 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
     // Draw instruction based on type
     if (instruction.type === "XIC") {
       // XIC: Normally open contact | |
+      const centerX = x + 37.5;
       elements.push(
         <g key={key}>
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
       );
     } else if (instruction.type === "XIO") {
       // XIO: Normally closed contact |/|
+      const centerX = x + 37.5;
       elements.push(
         <g key={key}>
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 15} x2={x + 45} y2={y - 15} stroke="currentColor" strokeWidth="2" />
-          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
       );
     } else if (instruction.type === "OTE") {
       // OTE: Output energize ( )
+      const centerX = x + 37.5;
       elements.push(
         <g key={key}>
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y + 10} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <circle cx={x + 37} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
-          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
+          <circle cx={centerX} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
       );
     } else if (instruction.type === "OTL") {
       // OTL: Output latch (L)
+      const centerX = x + 37.5;
       elements.push(
         <g key={key}>
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y + 10} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <circle cx={x + 37} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
-          <text x={x + 37} y={y + 4} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
+          <circle cx={centerX} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+          <text x={centerX} y={y + 4} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             L
           </text>
-          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
       );
     } else if (instruction.type === "OTU") {
       // OTU: Output unlatch (U)
+      const centerX = x + 37.5;
       elements.push(
         <g key={key}>
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y + 10} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <circle cx={x + 37} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
-          <text x={x + 37} y={y + 4} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
+          <circle cx={centerX} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+          <text x={centerX} y={y + 4} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             U
           </text>
-          <text x={x + 37} y={y - 22} textAnchor="middle" fontSize="12" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -322,21 +327,21 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
     renderElement(element, 0);
   });
 
-  const totalWidth = xPosition + 60;
-  const totalHeight = maxY + 40;
+  const totalWidth = xPosition + 80;
+  const totalHeight = Math.max(maxY + 60, 160);
 
   return (
     <div className="border border-border rounded-md p-4 bg-background">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-semibold text-muted-foreground">Rung {rungNumber}</span>
       </div>
-      <svg width={totalWidth} height={totalHeight} className="text-foreground">
+      <svg width={totalWidth} height={totalHeight} className="text-foreground overflow-visible">
         {/* Left rail */}
         <line
-          x1="0"
-          y1="0"
-          x2="0"
-          y2={totalHeight}
+          x1="20"
+          y1="10"
+          x2="20"
+          y2={totalHeight - 10}
           stroke="currentColor"
           strokeWidth="3"
         />
@@ -344,18 +349,18 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
         {/* Right rail */}
         <line
           x1={totalWidth - 20}
-          y1="0"
+          y1="10"
           x2={totalWidth - 20}
-          y2={totalHeight}
+          y2={totalHeight - 10}
           stroke="currentColor"
           strokeWidth="3"
         />
         
         {/* Rung horizontal line from left rail */}
         <line
-          x1="0"
+          x1="20"
           y1={RAIL_HEIGHT}
-          x2="20"
+          x2="40"
           y2={RAIL_HEIGHT}
           stroke="currentColor"
           strokeWidth="2"
