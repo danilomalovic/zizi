@@ -10,6 +10,20 @@ The application follows a clean, minimalist design approach inspired by develope
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+**October 24, 2025 - State Management Refactor for Editing:**
+- Refactored parser to perform deep parsing upfront instead of lazy parsing
+- Updated `ParsedResult` structure: Controller → Programs[] → Routines[] → Rungs[]
+- All rungs are now parsed during file upload and stored in deeply nested state
+- Removed `originalXML`, `parsedRungs`, and `loadingRungs` states from home.tsx
+- Added `addRungToRoutine()` function for immutable state updates
+- ChatPanel now parses `/edit` JSON responses and adds rungs to state automatically
+- Added JSON validation (array check, type field validation) before state updates
+- Improved error handling with toast notifications for parse failures
+- Edit mode now fully integrated: `/edit` commands create new rungs visible in the ladder viewer
+- Foundation in place for full ladder logic editing with visual feedback
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -118,7 +132,9 @@ Preferred communication style: Simple, everyday language.
 **L5X File Processing:**
 - Client-side file upload and parsing (no server upload needed)
 - Full hierarchical extraction of controller structure
-- Parser returns structured object: `{ controllerName: string, controllerTags: string[], programs: [{ name: string, tags: string[], routines: string[] }] }`
+- Deep parsing of entire project structure on upload
+- Parser returns deeply nested object: Controller → Programs[] → Routines[] → Rungs[]
+- Each Rung contains: `{ number, text, parsed }` with JSON syntax tree
 - Extracts controller-scoped tags and program-scoped tags
 - **RLL (Relay Ladder Logic) Parser:**
   - Parses ladder logic rung text into JSON syntax trees
@@ -175,16 +191,19 @@ Preferred communication style: Simple, everyday language.
       - Example input: `/edit add a rung with an XIC for 'Start' and an OTE for 'Motor'`
       - Example output: `[{"type":"XIC","tag":"Start"},{"type":"OTE","tag":"Motor"}]`
       - Supports complex structures like branches, multi-parameter instructions, and nested logic
-      - Foundation for future visual ladder editor functionality
+      - Automatically creates new rungs in the selected routine with immutable state updates
+      - New rungs appear immediately in the visual ladder logic viewer
+      - Foundation for full ladder logic editing functionality
 - Real-time file validation (L5X extension check)
 - Loading states and error handling with user feedback
 - Professional developer tool aesthetics matching VS Code/Linear design patterns
 
 **Performance Optimizations:**
 - Component state management with useState for tree collapse/expand
-- Lazy XML extraction (only when routine is selected)
+- Deep parsing performed once during file upload (all rungs parsed upfront)
 - Efficient tree rendering with proper React keys
 - Smooth transitions for interactive elements
+- Immutable state updates using spread operators for React optimization
 
 ## External Dependencies
 

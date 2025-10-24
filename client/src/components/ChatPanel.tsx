@@ -73,6 +73,18 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung }: ChatPanelP
           // Parse the JSON response
           const parsed = JSON.parse(response);
           
+          // Validate that parsed is an array
+          if (!Array.isArray(parsed)) {
+            throw new Error('Expected JSON array of ladder logic instructions');
+          }
+
+          // Validate that each element has a type field
+          for (const element of parsed) {
+            if (!element || typeof element !== 'object' || !element.type) {
+              throw new Error('Invalid ladder logic instruction format');
+            }
+          }
+          
           // Calculate the next rung number
           const nextRungNumber = currentRoutine.rungs 
             ? Math.max(...currentRoutine.rungs.map(r => r.number), 0) + 1
@@ -98,11 +110,19 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung }: ChatPanelP
 
           setMessages(prev => [...prev, assistantMessage]);
         } catch (parseError) {
-          // If parsing fails, show the response as-is (it might be an error message)
+          // Show a user-friendly error message
+          toast({
+            variant: "destructive",
+            description: parseError instanceof Error 
+              ? `Failed to parse ladder logic: ${parseError.message}`
+              : "Invalid JSON response from AI",
+          });
+
+          // Show the error in the chat as well
           const assistantMessage: Message = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
-            content: response,
+            content: `❌ Error: ${parseError instanceof Error ? parseError.message : 'Invalid JSON response'}\n\n${response}`,
             timestamp: new Date(),
           };
 
