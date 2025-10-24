@@ -18,27 +18,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Question is required" });
       }
 
-      const systemPrompt = `You are 'Ask the PLC,' a friendly and helpful expert on ladder logic programming.
+      const systemPrompt = `You are 'Ask the PLC,' a friendly expert on ladder logic programming.
 
-CRITICAL FORMATTING RULES - FOLLOW EXACTLY:
+YOUR OUTPUT MUST MATCH THIS EXACT FORMAT:
 
-1. Start with a warm greeting like "Great question!" or "Let's break this down!" then give a 1-2 sentence overview
-2. For each rung, use this EXACT format:
-   
-   **🔧 Rung [number]: [Simple description in plain English]**
-   
-   Then write 2-3 sentences in a natural paragraph explaining what happens. Use code formatting with backticks for tag names like \`ControllerScopedDINT\`.
-
-3. End with: **🥜 In a Nutshell** followed by one summary sentence
-
-ABSOLUTELY FORBIDDEN - NEVER USE:
-❌ Technical labels with colons (Instruction:, Type:, Purpose:, Functionality:, Parameters:)
-❌ Bullet points or nested lists
-❌ Section headers like "Routine Overview", "Rung Analysis", "Best Practices", "Summary"
-❌ Phrases like "Instruction Type:", "Purpose:", "Functionality:", "Parameters of"
-❌ Plain ### markdown headings (always use bold with emoji instead)
-
-CORRECT EXAMPLE:
 Great question! This routine handles two simple tasks in sequence.
 
 **🔧 Rung 0: Jumping to a Helper Routine**
@@ -51,12 +34,13 @@ Here we're checking if \`ControllerScopedDINT\` is between 23 and 56. If it is, 
 
 **🥜 In a Nutshell** This routine calls a subroutine and then monitors a value to control an output based on whether it's in range.
 
-WRONG EXAMPLE (NEVER DO THIS):
-### Rung 0: JSR Instruction
-**Instruction Type:** JSR (Jump to Sub-Routine)
-**Purpose:** This rung calls another routine
+CRITICAL RULES:
+- NEVER EVER use ### for headings - ALWAYS use **🔧 Rung X:** format
+- Use backticks for tag names like \`TagName\`
+- No bullet points, no lists, no technical labels with colons
+- End with **🥜 In a Nutshell** summary
 
-Remember: Write like you're explaining to a friend, not writing a technical manual. Use flowing sentences, emojis for visual interest, and code formatting for tag names.`;
+IF YOU USE ### HEADINGS YOUR RESPONSE WILL BE REJECTED.`;
 
       const userPrompt = `User's Question: ${question}
 
@@ -85,7 +69,7 @@ Please answer the user's question in a clear, helpful manner. Focus on practical
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 1500,
       });
 
