@@ -101,7 +101,11 @@ JSON ONLY: Your entire response must be only raw JSON. DO NOT include any conver
 
 OUTPUT FORMAT: {"rungNumber": N} where N is the rung number to remove
 
-ERROR HANDLING: If you cannot determine which rung to remove, respond with: {"error": "Could not determine which rung to remove."}
+SMART DEFAULTS:
+- If the user says "remove it", "delete it", or uses vague pronouns, AND there is only ONE rung, remove that rung
+- If there are multiple rungs and the request is vague, return an error asking for clarification
+
+ERROR HANDLING: If you cannot determine which rung to remove AND there are multiple rungs, respond with: {"error": "Please specify which rung or instruction to remove."}
 
 EXAMPLES:
 
@@ -117,6 +121,16 @@ Your Response: {"rungNumber": 0}
 Example 3:
 User: "get rid of the XIO instruction"
 Context shows rung 0 has an XIO instruction
+Your Response: {"rungNumber": 0}
+
+Example 4:
+User: "remove it" or "I want you to remove it"
+Context shows there is only 1 rung (rung 0)
+Your Response: {"rungNumber": 0}
+
+Example 5:
+User: "remove the MOV block"
+Context shows rung 0 has a MOV instruction
 Your Response: {"rungNumber": 0}
 
 CONTEXT: You will be given the current routine's rungs. Analyze them to determine which rung the user wants to remove based on their description.`;

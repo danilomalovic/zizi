@@ -62,13 +62,28 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung, onRemoveRung
       const hasEditSlashCommand = inputText.trim().startsWith('/edit');
       const hasRemoveSlashCommand = inputText.trim().startsWith('/remove');
 
-      // Detect natural language intent
+      // Detect natural language intent (more flexible patterns)
       const lowerText = inputText.trim().toLowerCase();
-      const removePatterns = /^(remove|delete|get rid of|erase|clear)\s+(the\s+)?(mov|xic|xio|ote|otl|otu|rung|instruction|block)/i;
-      const addPatterns = /^(add|create|insert|make)\s+(a\s+)?(rung|mov|xic|xio|ote|otl|otu|instruction|block)/i;
       
-      const hasRemoveIntent = removePatterns.test(lowerText);
-      const hasAddIntent = addPatterns.test(lowerText);
+      // Removal patterns - matches various phrasings
+      const removePatterns = [
+        /\b(remove|delete|get rid of|erase|clear)\s+(only\s+)?(the\s+)?(rung|mov|xic|xio|ote|otl|otu|instruction|block)/i,
+        /\b(remove|delete)\s+it\b/i,
+        /\bi\s+want\s+you\s+to\s+(remove|delete)/i,
+        /\bplease\s+(remove|delete)/i,
+        /\bcan\s+you\s+(remove|delete)/i,
+      ];
+      
+      // Add patterns - matches various phrasings
+      const addPatterns = [
+        /\b(add|create|insert|make)\s+(only\s+)?(a\s+)?(new\s+)?(rung|mov|xic|xio|ote|otl|otu|instruction|block)/i,
+        /\bi\s+want\s+you\s+to\s+(add|create)/i,
+        /\bplease\s+(add|create)/i,
+        /\bcan\s+you\s+(add|create)/i,
+      ];
+      
+      const hasRemoveIntent = removePatterns.some(pattern => pattern.test(lowerText));
+      const hasAddIntent = addPatterns.some(pattern => pattern.test(lowerText));
 
       // Determine the mode: edit, remove, or ask
       const isEditCommand = hasEditSlashCommand || hasAddIntent;
@@ -90,8 +105,20 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung, onRemoveRung
       // Handle remove command
       if (isRemoveCommand && onRemoveRung && currentRoutine) {
         try {
-          // Parse the JSON response - expecting { rungNumber: number }
+          // Parse the JSON response - expecting { rungNumber: number } or { error: string }
           const parsed = JSON.parse(response);
+          
+          // Check if AI returned an error
+          if (parsed.error) {
+            const assistantMessage: Message = {
+              id: `assistant-${Date.now()}`,
+              role: 'assistant',
+              content: `❌ ${parsed.error}\n\nTip: Try being more specific, like "remove rung 0" or "remove the MOV instruction"`,
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+            return;
+          }
           
           if (typeof parsed.rungNumber !== 'number') {
             throw new Error('Expected rungNumber field in response');
