@@ -327,11 +327,11 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full grid grid-cols-1 xl:grid-cols-12 gap-4 p-4 md:p-6">
+        <div className="h-full grid grid-cols-1 xl:grid-cols-12 gap-3 p-3 md:p-4">
           {/* Left Panel - Upload & Tree View */}
-          <section className="flex flex-col xl:col-span-3 gap-4" aria-label="File upload and project structure">
+          <section className="flex flex-col h-full xl:col-span-3 gap-3 min-h-0" aria-label="File upload and project structure">
             {/* File Upload */}
-            <Card className="p-4">
+            <Card className="p-3 flex-shrink-0">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -406,12 +406,12 @@ export default function Home() {
 
             {/* Tree View */}
             {parsedData && (
-              <Card className="flex-1 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-border sticky top-0 bg-card z-10">
-                  <h2 className="text-lg font-semibold text-foreground">Project Structure</h2>
+              <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
+                <div className="p-3 border-b border-border bg-card flex-shrink-0">
+                  <h2 className="text-base font-semibold text-foreground">Project Structure</h2>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-2">
+                <div className="flex-1 overflow-y-auto p-2 min-h-0">
                   <TreeView 
                     data={parsedData} 
                     onRoutineClick={handleRoutineClick}
@@ -423,11 +423,11 @@ export default function Home() {
           </section>
 
           {/* Center Panel - Parsed Logic Viewer */}
-          <section className="flex flex-col xl:col-span-5" aria-label="Parsed Logic Viewer">
-            <Card className="flex-1 flex flex-col overflow-hidden">
+          <section className="flex flex-col h-full xl:col-span-5 min-h-0" aria-label="Parsed Logic Viewer">
+            <Card className="h-full flex flex-col overflow-hidden">
               {selectedRoutine ? (
                 <>
-                  <div className="flex p-4 border-b border-border items-center justify-between bg-card sticky top-0 z-10">
+                  <div className="flex p-3 border-b border-border items-center justify-between bg-card flex-shrink-0">
                     <div className="flex-1 min-w-0">
                       <h2 className="text-lg font-semibold text-foreground truncate">
                         {selectedRoutine.name}
@@ -458,7 +458,7 @@ export default function Home() {
                     </Button>
                   </div>
                   
-                  <div className="flex-1 overflow-auto bg-muted/30">
+                  <div className="flex-1 overflow-auto bg-muted/30 min-h-0">
                     {loadingRungs ? (
                       <div className="flex items-center justify-center h-full w-full">
                         <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
@@ -492,7 +492,7 @@ export default function Home() {
           </section>
 
           {/* Right Panel - AI Chat Assistant */}
-          <section className="flex flex-col xl:col-span-4" aria-label="AI Chat Assistant">
+          <section className="flex flex-col h-full xl:col-span-4 min-h-0" aria-label="AI Chat Assistant">
             <ChatPanel 
               fullProject={parsedData}
               currentRoutine={selectedRoutine && parsedRungs ? {
