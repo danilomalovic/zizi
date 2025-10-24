@@ -66,6 +66,11 @@ Preferred communication style: Simple, everyday language.
 - Minimal backend with in-memory storage interface
 - Ready-to-extend storage abstraction (IStorage interface)
 - Session management infrastructure in place (connect-pg-simple)
+- **AI Assistant API:**
+  - POST `/api/ai/ask` - Accepts user questions with project context
+  - Integrates with OpenAI GPT-4o-mini via Replit AI Integrations
+  - Processes questions with full awareness of controller, programs, routines, and tags
+  - Returns natural language explanations of PLC logic and programming concepts
 
 ### Data Storage Solutions
 
@@ -116,27 +121,39 @@ Preferred communication style: Simple, everyday language.
   - Example: `[XIC(Tag.0),XIC(Tag.1)]MOV(32,Dest);` → Branch structure with parallel paths and MOV instruction
 
 **User Interface:**
-- Two-panel layout: left panel (tree view + file upload), right panel (visual ladder logic viewer)
-- IDE-like collapsible tree view displaying full project hierarchy:
+- Three-column grid layout (responsive to xl breakpoint):
+  - **Left Panel (xl:col-span-3)**: File upload + IDE-like collapsible tree view
+  - **Center Panel (xl:col-span-5)**: Visual ladder logic viewer with SVG rendering
+  - **Right Panel (xl:col-span-4)**: AI-powered "Ask the PLC" chat assistant
+- **Project Tree View:**
+  - IDE-like collapsible tree displaying full project hierarchy
   - Controller name as root node
   - Controller Tags section (collapsible)
   - Programs section with each program showing Tags and Routines subfolders
-  - All routines clickable to display visual ladder diagrams
-- Default expanded state: Controller, Programs, and all program subfolders open on load
-- Chevron icons (▶/▼) indicate collapse/expand state
+  - All routines clickable to display visual ladder diagrams and update chat context
+  - Default expanded state: Controller, Programs, and all program subfolders open on load
+  - Chevron icons (▶/▼) indicate collapse/expand state
 - **Visual Ladder Logic Viewer:**
   - SVG-based ladder diagram rendering for each rung
-  - Left and right power rails
+  - Left and right power rails with proper spacing
   - Visual instruction symbols:
     - XIC (Normally Open Contact): `| |`
     - XIO (Normally Closed Contact): `|/|`
     - OTE (Output Energize): `( )`
     - OTL/OTU (Latch/Unlatch): `(L)` / `(U)`
     - MOV and other box instructions: Rectangle with source/dest
-  - Tag names displayed above/inside instruction symbols
+  - Tag names displayed above instruction symbols with consistent spacing
   - Parallel branches with proper split/merge visualization
   - All branches extend to merge bus regardless of length
   - Professional ladder diagram aesthetics
+- **AI Chat Assistant ("Ask the PLC"):**
+  - Context-aware chat panel with full project awareness
+  - Real-time conversation with AI expert on Rockwell Automation programming
+  - Message history with user/assistant message differentiation
+  - Automatic context passing (full project + currently selected routine)
+  - Integrated with OpenAI GPT-4o-mini via Replit AI Integrations
+  - Backend API endpoint ensures secure API key management
+  - Helpful for explaining ladder logic, analyzing program structure, and answering PLC questions
 - Real-time file validation (L5X extension check)
 - Loading states and error handling with user feedback
 - Professional developer tool aesthetics matching VS Code/Linear design patterns
@@ -174,6 +191,7 @@ Preferred communication style: Simple, everyday language.
 - **Drizzle ORM**: TypeScript ORM for SQL databases
 - **@neondatabase/serverless**: PostgreSQL driver for Neon
 - **connect-pg-simple**: PostgreSQL session store
+- **OpenAI SDK**: AI chat completions for the "Ask the PLC" feature
 
 ### Utilities & Tools
 - **fast-xml-parser**: XML parsing library (critical for L5X processing)
