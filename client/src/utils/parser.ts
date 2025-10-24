@@ -1,9 +1,22 @@
 import { XMLParser } from "fast-xml-parser";
+import { parseRung, type RungElement } from "./rllParser";
+
+// New deep structure types
+export interface Rung {
+  number: number;
+  text: string;
+  parsed: RungElement[];
+}
+
+export interface Routine {
+  name: string;
+  rungs: Rung[];
+}
 
 export interface Program {
   name: string;
   tags: string[];
-  routines: string[];
+  routines: Routine[]; // Changed from string[] to Routine[]
 }
 
 export interface ParsedResult {
@@ -77,7 +90,7 @@ export function parseL5X(xml: string): ParsedResult | ParsedError {
         for (const program of programList) {
           const programName = program.Name || 'Unknown';
           const programTags: string[] = [];
-          const routines: string[] = [];
+          const routines: Routine[] = [];
 
           // Extract program-scoped tags
           if (program.Tags) {
@@ -115,7 +128,46 @@ export function parseL5X(xml: string): ParsedResult | ParsedError {
 
               for (const routine of routineList) {
                 if (routine.Name) {
-                  routines.push(routine.Name);
+                  const rungs: Rung[] = [];
+
+                  // Parse RLLContent if it exists
+                  if (routine.RLLContent && routine.Type === 'RLL') {
+                    const rllContent = routine.RLLContent;
+                    
+                    // Get Rung elements
+                    const rungList = Array.isArray(rllContent.Rung)
+                      ? rllContent.Rung
+                      : rllContent.Rung
+                      ? [rllContent.Rung]
+                      : [];
+
+                    for (const rung of rungList) {
+                      if (rung.Text) {
+                        const rungNumber = rung.Number !== undefined ? rung.Number : 0;
+                        const rungText = rung.Text.trim();
+                        
+                        // Parse the rung text into JSON structure
+                        let parsedElements: RungElement[] = [];
+                        try {
+                          parsedElements = parseRung(rungText);
+                        } catch (error) {
+                          console.error(`Error parsing rung ${rungNumber} in ${routine.Name}:`, error);
+                          parsedElements = [];
+                        }
+
+                        rungs.push({
+                          number: rungNumber,
+                          text: rungText,
+                          parsed: parsedElements
+                        });
+                      }
+                    }
+                  }
+
+                  routines.push({
+                    name: routine.Name,
+                    rungs: rungs
+                  });
                 }
               }
             }
