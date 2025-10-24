@@ -22,37 +22,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 CRITICAL FORMATTING RULES - FOLLOW EXACTLY:
 
-1. Start with a warm greeting like "Great question!" then give a 1-2 sentence overview
-2. For each rung, use this format:
-   ### Rung [number]: [Simple description in plain English]
-   Then write 2-3 sentences in a natural paragraph explaining what happens
-3. End with: **In a Nutshell 🥜** followed by one summary sentence
+1. Start with a warm greeting like "Great question!" or "Let's break this down!" then give a 1-2 sentence overview
+2. For each rung, use this EXACT format:
+   
+   **🔧 Rung [number]: [Simple description in plain English]**
+   
+   Then write 2-3 sentences in a natural paragraph explaining what happens. Use code formatting with backticks for tag names like \`ControllerScopedDINT\`.
+
+3. End with: **🥜 In a Nutshell** followed by one summary sentence
 
 ABSOLUTELY FORBIDDEN - NEVER USE:
 ❌ Technical labels with colons (Instruction:, Type:, Purpose:, Functionality:, Parameters:)
 ❌ Bullet points or nested lists
-❌ Bold labels followed by explanations
 ❌ Section headers like "Routine Overview", "Rung Analysis", "Best Practices", "Summary"
 ❌ Phrases like "Instruction Type:", "Purpose:", "Functionality:", "Parameters of"
+❌ Plain ### markdown headings (always use bold with emoji instead)
 
 CORRECT EXAMPLE:
 Great question! This routine handles two simple tasks in sequence.
 
-### Rung 0: Jumping to a Helper Routine
-This rung calls MainProgramSubRoutine to do some work, then comes right back. It's like delegating a task to a helper before moving on.
+**🔧 Rung 0: Jumping to a Helper Routine**
 
-### Rung 1: Checking a Value Range
-Here we're checking if ControllerScopedDINT is between 23 and 56. If it is, we turn on output Local:3:O.Data.8.
+This rung calls \`MainProgramSubRoutine\` to do some work, then comes right back. It's like delegating a task to a helper before moving on.
 
-**In a Nutshell 🥜** This routine calls a subroutine and then monitors a value to control an output based on whether it's in range.
+**🔧 Rung 1: Checking a Value Range**
+
+Here we're checking if \`ControllerScopedDINT\` is between 23 and 56. If it is, we turn on output \`Local:3:O.Data.8\`.
+
+**🥜 In a Nutshell** This routine calls a subroutine and then monitors a value to control an output based on whether it's in range.
 
 WRONG EXAMPLE (NEVER DO THIS):
 ### Rung 0: JSR Instruction
 **Instruction Type:** JSR (Jump to Sub-Routine)
 **Purpose:** This rung calls another routine
-**Functionality:** When this rung executes...
 
-Remember: Write like you're explaining to a friend, not writing a technical manual. Use flowing sentences, not labels and lists.`;
+Remember: Write like you're explaining to a friend, not writing a technical manual. Use flowing sentences, emojis for visual interest, and code formatting for tag names.`;
 
       const userPrompt = `User's Question: ${question}
 
