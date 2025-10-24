@@ -106,18 +106,27 @@ Preferred communication style: Simple, everyday language.
 - Full hierarchical extraction of controller structure
 - Parser returns structured object: `{ controllerName: string, controllerTags: string[], programs: [{ name: string, tags: string[], routines: string[] }] }`
 - Extracts controller-scoped tags and program-scoped tags
-- XML routine viewer with pretty-printing and formatting
+- **RLL (Relay Ladder Logic) Parser:**
+  - Parses ladder logic rung text into JSON syntax trees
+  - Handles basic instructions (XIC, OTE, etc.)
+  - Supports nested branches `[...]` and parallel branches (commas)
+  - Preserves PLC rung numbering from XML
+  - Example: `XIC(TagA)OTE(TagB);` → `[{type: "XIC", tag: "TagA"}, {type: "OTE", tag: "TagB"}]`
 
 **User Interface:**
-- Two-panel layout: left panel (tree view + file upload), right panel (XML viewer)
+- Two-panel layout: left panel (tree view + file upload), right panel (parsed logic viewer)
 - IDE-like collapsible tree view displaying full project hierarchy:
   - Controller name as root node
   - Controller Tags section (collapsible)
   - Programs section with each program showing Tags and Routines subfolders
-  - All routines clickable to display XML
+  - All routines clickable to display parsed logic
 - Default expanded state: Controller, Programs, and all program subfolders open on load
 - Chevron icons (▶/▼) indicate collapse/expand state
-- Copy-to-clipboard for XML content
+- **Parsed Logic Viewer:**
+  - Displays each rung with its PLC rung number
+  - Shows original rung text alongside parsed JSON structure
+  - Formatted JSON syntax tree for each rung
+  - Copy-to-clipboard for complete JSON output
 - Real-time file validation (L5X extension check)
 - Loading states and error handling with user feedback
 - Professional developer tool aesthetics matching VS Code/Linear design patterns

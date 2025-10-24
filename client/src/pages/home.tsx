@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { parseL5X, type ParsedResult, type Program } from "@/utils/parser";
 import { extractRoutineXML } from "@/utils/xml-formatter";
+import { parseRung, extractRungs, type RungElement } from "@/utils/rllParser";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -184,8 +185,8 @@ export default function Home() {
   const [originalXML, setOriginalXML] = useState<string>("");
   
   const [selectedRoutine, setSelectedRoutine] = useState<{ program: string; name: string } | null>(null);
-  const [routineXML, setRoutineXML] = useState<string | null>(null);
-  const [loadingXML, setLoadingXML] = useState(false);
+  const [parsedRungs, setParsedRungs] = useState<Array<{ number: number; text: string; parsed: RungElement[] }> | null>(null);
+  const [loadingRungs, setLoadingRungs] = useState(false);
   
   const [copied, setCopied] = useState(false);
   
@@ -209,7 +210,7 @@ export default function Home() {
     setError(null);
     setParsedData(null);
     setSelectedRoutine(null);
-    setRoutineXML(null);
+    setParsedRungs(null);
 
     try {
       const text = await file.text();
@@ -237,24 +238,54 @@ export default function Home() {
 
   const handleRoutineClick = (programName: string, routineName: string) => {
     setSelectedRoutine({ program: programName, name: routineName });
-    setLoadingXML(true);
+    setLoadingRungs(true);
     
     // Simulate async operation for better UX
     setTimeout(() => {
+      // Extract the routine XML
       const xml = extractRoutineXML(originalXML, programName, routineName);
-      setRoutineXML(xml);
-      setLoadingXML(false);
+      
+      if (xml) {
+        // Extract rungs from the XML
+        const rungs = extractRungs(xml);
+        
+        // Parse each rung
+        const parsedRungsData = rungs.map(rung => {
+          try {
+            const parsed = parseRung(rung.text);
+            return {
+              number: rung.number,
+              text: rung.text,
+              parsed: parsed
+            };
+          } catch (error) {
+            console.error(`Error parsing rung ${rung.number}:`, error);
+            return {
+              number: rung.number,
+              text: rung.text,
+              parsed: []
+            };
+          }
+        });
+        
+        setParsedRungs(parsedRungsData);
+      } else {
+        setParsedRungs(null);
+      }
+      
+      setLoadingRungs(false);
     }, 100);
   };
 
-  const handleCopyXML = async () => {
-    if (!routineXML) return;
+  const handleCopyJSON = async () => {
+    if (!parsedRungs) return;
     
     try {
-      await navigator.clipboard.writeText(routineXML);
+      const jsonOutput = JSON.stringify(parsedRungs, null, 2);
+      await navigator.clipboard.writeText(jsonOutput);
       setCopied(true);
       toast({
-        description: "XML copied to clipboard",
+        description: "JSON copied to clipboard",
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -389,8 +420,8 @@ export default function Home() {
             )}
           </section>
 
-          {/* Right Panel - XML Viewer */}
-          <section className="flex flex-col w-full lg:w-3/5 xl:w-2/3" aria-label="XML Viewer">
+          {/* Right Panel - Parsed Logic Viewer */}
+          <section className="flex flex-col w-full lg:w-3/5 xl:w-2/3" aria-label="Parsed Logic Viewer">
             <Card className="flex-1 flex flex-col overflow-hidden">
               {selectedRoutine ? (
                 <>
@@ -406,10 +437,10 @@ export default function Home() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={handleCopyXML}
-                      disabled={!routineXML || loadingXML}
+                      onClick={handleCopyJSON}
+                      disabled={!parsedRungs || loadingRungs}
                       className="ml-4 flex-shrink-0"
-                      data-testid="button-copy-xml"
+                      data-testid="button-copy-json"
                     >
                       {copied ? (
                         <>
@@ -419,29 +450,43 @@ export default function Home() {
                       ) : (
                         <>
                           <Copy className="w-4 h-4 mr-2" />
-                          Copy
+                          Copy JSON
                         </>
                       )}
                     </Button>
                   </div>
                   
                   <div className="flex-1 overflow-auto bg-muted/30">
-                    {loadingXML ? (
+                    {loadingRungs ? (
                       <div className="flex items-center justify-center h-full w-full">
                         <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
                       </div>
-                    ) : routineXML ? (
-                      <pre
-                        className="p-4 text-sm font-mono leading-relaxed text-foreground overflow-x-auto w-full"
-                        style={{ lineHeight: '1.6' }}
-                        data-testid="viewer-xml-content"
-                      >
-                        {routineXML}
-                      </pre>
+                    ) : parsedRungs && parsedRungs.length > 0 ? (
+                      <div className="p-4 space-y-6">
+                        {parsedRungs.map((rung) => (
+                          <div key={rung.number} className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                Rung {rung.number}
+                              </Badge>
+                              <code className="text-xs text-muted-foreground font-mono">
+                                {rung.text}
+                              </code>
+                            </div>
+                            <pre
+                              className="p-3 text-sm font-mono leading-relaxed text-foreground overflow-x-auto w-full bg-background/50 rounded-md border border-border"
+                              style={{ lineHeight: '1.6' }}
+                              data-testid={`rung-parsed-${rung.number}`}
+                            >
+                              {JSON.stringify(rung.parsed, null, 2)}
+                            </pre>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full w-full text-muted-foreground p-6">
                         <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
-                        <div className="text-sm">Failed to extract routine XML</div>
+                        <div className="text-sm">No rungs found in this routine</div>
                       </div>
                     )}
                   </div>
@@ -449,7 +494,7 @@ export default function Home() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6">
                   <FileText className="w-16 h-16 mb-3 opacity-50" />
-                  <div className="text-base font-medium">Select a routine to view XML</div>
+                  <div className="text-base font-medium">Select a routine to view parsed logic</div>
                   <div className="text-sm mt-1">Choose a routine from the project structure</div>
                 </div>
               )}
