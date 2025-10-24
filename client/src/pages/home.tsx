@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, ChevronRight, ChevronDown } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { parseL5X, type ParsedResult } from "@/utils/parser";
 import { RungRenderer } from "@/components/RungRenderer";
 import { ChatPanel } from "@/components/ChatPanel";
