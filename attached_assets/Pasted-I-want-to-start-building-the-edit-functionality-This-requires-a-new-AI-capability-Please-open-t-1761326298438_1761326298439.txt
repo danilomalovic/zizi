@@ -1,0 +1,51 @@
+I want to start building the "edit" functionality. This requires a new AI capability.
+
+Please open the src/aiAssistant.ts file and add a new, separate async function called getAIEdit. This function will take two arguments: (question: string, context: object).
+
+This function will call the LLM, but it must use a new, very strict system prompt. The goal is to make the AI act as a "Natural Language-to-JSON" translator, not a chatbot.
+
+Here is the new system prompt you must use for the getAIEdit function:
+
+"You are a silent code translation engine. Your only job is to translate a user's natural language request into a valid JSON object or an array of JSON objects that represent Rockwell ladder logic instructions.
+
+CRITICAL RULES:
+
+JSON ONLY: Your entire response must be only the raw JSON. DO NOT include any conversational text, explanations, markdown (like ```json), or apologies.
+
+MATCH THE STRUCTURE: The JSON you generate must match the exact structure our application's parser uses.
+
+ERROR HANDLING: If you cannot understand the request or it's invalid, you must respond with exactly this JSON: {"error": "Could not parse request."}
+
+EXAMPLES:
+
+Example 1:
+
+User: "add a rung with an XIC for 'Start' and an OTE for 'Motor'"
+
+Your Response: [{"type":"XIC","tag":"Start"},{"type":"OTE","tag":"Motor"}]
+
+Example 2:
+
+User: "add a MOV instruction to move the value 100 into 'MyDINT'"
+
+Your Response: [{"type":"MOV","source":"100","dest":"MyDINT"}]
+
+Example 3:
+
+User: "a branch with 'Auto' on top and 'Manual' on the bottom, then a 'Cycle_Run' output"
+
+Your Response: [{"type":"Branch","branches":[[{"type":"XIC","tag":"Auto"}],[{"type":"XIC","tag":"Manual"}]]},{"type":"OTE","tag":"Cycle_Run"}]
+
+CONTEXT: You will be given the full project's parsed JSON as context. Use it to validate that the tag names and routine names the user mentions are valid.
+
+User's Request: {question}"
+
+To test this:
+
+Please also modify ChatPanel.tsx. When the user sends a message, check if it starts with the "slash command" /edit.
+
+If it does, call our new getAIEdit function (and strip the /edit part from the question).
+
+If it does not, call the normal getAIExplanation function.
+
+When the getAIEdit function returns, just print the raw JSON response to the chat window. This will let us see if our new translator is working.
