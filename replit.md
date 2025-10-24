@@ -116,19 +116,27 @@ Preferred communication style: Simple, everyday language.
   - Example: `[XIC(Tag.0),XIC(Tag.1)]MOV(32,Dest);` → Branch structure with parallel paths and MOV instruction
 
 **User Interface:**
-- Two-panel layout: left panel (tree view + file upload), right panel (parsed logic viewer)
+- Two-panel layout: left panel (tree view + file upload), right panel (visual ladder logic viewer)
 - IDE-like collapsible tree view displaying full project hierarchy:
   - Controller name as root node
   - Controller Tags section (collapsible)
   - Programs section with each program showing Tags and Routines subfolders
-  - All routines clickable to display parsed logic
+  - All routines clickable to display visual ladder diagrams
 - Default expanded state: Controller, Programs, and all program subfolders open on load
 - Chevron icons (▶/▼) indicate collapse/expand state
-- **Parsed Logic Viewer:**
-  - Displays each rung with its PLC rung number
-  - Shows original rung text alongside parsed JSON structure
-  - Formatted JSON syntax tree for each rung
-  - Copy-to-clipboard for complete JSON output
+- **Visual Ladder Logic Viewer:**
+  - SVG-based ladder diagram rendering for each rung
+  - Left and right power rails
+  - Visual instruction symbols:
+    - XIC (Normally Open Contact): `| |`
+    - XIO (Normally Closed Contact): `|/|`
+    - OTE (Output Energize): `( )`
+    - OTL/OTU (Latch/Unlatch): `(L)` / `(U)`
+    - MOV and other box instructions: Rectangle with source/dest
+  - Tag names displayed above/inside instruction symbols
+  - Parallel branches with proper split/merge visualization
+  - All branches extend to merge bus regardless of length
+  - Professional ladder diagram aesthetics
 - Real-time file validation (L5X extension check)
 - Loading states and error handling with user feedback
 - Professional developer tool aesthetics matching VS Code/Linear design patterns

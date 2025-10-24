@@ -3,6 +3,7 @@ import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, Chev
 import { parseL5X, type ParsedResult, type Program } from "@/utils/parser";
 import { extractRoutineXML } from "@/utils/xml-formatter";
 import { parseRung, extractRungs, type RungElement } from "@/utils/rllParser";
+import { RungRenderer } from "@/components/RungRenderer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -462,25 +463,13 @@ export default function Home() {
                         <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
                       </div>
                     ) : parsedRungs && parsedRungs.length > 0 ? (
-                      <div className="p-4 space-y-6">
+                      <div className="p-4 space-y-4">
                         {parsedRungs.map((rung) => (
-                          <div key={rung.number} className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                Rung {rung.number}
-                              </Badge>
-                              <code className="text-xs text-muted-foreground font-mono">
-                                {rung.text}
-                              </code>
-                            </div>
-                            <pre
-                              className="p-3 text-sm font-mono leading-relaxed text-foreground overflow-x-auto w-full bg-background/50 rounded-md border border-border"
-                              style={{ lineHeight: '1.6' }}
-                              data-testid={`rung-parsed-${rung.number}`}
-                            >
-                              {JSON.stringify(rung.parsed, null, 2)}
-                            </pre>
-                          </div>
+                          <RungRenderer
+                            key={rung.number}
+                            parsed={rung.parsed}
+                            rungNumber={rung.number}
+                          />
                         ))}
                       </div>
                     ) : (
