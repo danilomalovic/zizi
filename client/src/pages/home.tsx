@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus, FolderPlus, FilePlus } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus, FolderPlus, FilePlus, Edit2, Trash2 } from "lucide-react";
 import { parseL5X, type ParsedResult } from "@/utils/parser";
 import { RungRenderer, type InstructionClickData } from "@/components/RungRenderer";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -8,7 +8,10 @@ import { InstructionEditor } from "@/components/InstructionEditor";
 import { InstructionEditDialog } from "@/components/InstructionEditDialog";
 import { TagManager } from "@/components/TagManager";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
+import { NewProgramDialog } from "@/components/NewProgramDialog";
 import { NewRoutineDialog } from "@/components/NewRoutineDialog";
+import { RenameDialog } from "@/components/RenameDialog";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +27,7 @@ interface TreeNodeProps {
   children?: React.ReactNode;
   defaultExpanded?: boolean;
   level?: number;
+  actions?: React.ReactNode;
 }
 
 function TreeNode({ 
@@ -34,7 +38,8 @@ function TreeNode({
   isSelected = false,
   children, 
   defaultExpanded = false,
-  level = 0
+  level = 0,
+  actions
 }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const hasChildren = !!children;
@@ -52,7 +57,7 @@ function TreeNode({
     <div>
       <div
         onClick={handleClick}
-        className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer select-none transition-colors ${
+        className={`group flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer select-none transition-colors ${
           isSelected 
             ? 'bg-accent text-accent-foreground' 
             : isClickable 
@@ -72,9 +77,14 @@ function TreeNode({
           <span className="w-4 flex-shrink-0" />
         )}
         {icon && <span className="flex-shrink-0">{icon}</span>}
-        <span className={`text-sm truncate ${isClickable ? 'font-medium text-foreground' : 'text-foreground'}`}>
+        <span className={`text-sm truncate flex-1 ${isClickable ? 'font-medium text-foreground' : 'text-foreground'}`}>
           {label}
         </span>
+        {actions && (
+          <span className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+            {actions}
+          </span>
+        )}
       </div>
       {hasChildren && isExpanded && (
         <div>
@@ -89,9 +99,23 @@ interface TreeViewProps {
   data: ParsedResult;
   onRoutineClick: (programName: string, routineName: string) => void;
   selectedRoutine: { program: string; name: string } | null;
+  onRenameController?: () => void;
+  onRenameProgram?: (programName: string) => void;
+  onDeleteProgram?: (programName: string) => void;
+  onRenameRoutine?: (programName: string, routineName: string) => void;
+  onDeleteRoutine?: (programName: string, routineName: string) => void;
 }
 
-function TreeView({ data, onRoutineClick, selectedRoutine }: TreeViewProps) {
+function TreeView({ 
+  data, 
+  onRoutineClick, 
+  selectedRoutine,
+  onRenameController,
+  onRenameProgram,
+  onDeleteProgram,
+  onRenameRoutine,
+  onDeleteRoutine
+}: TreeViewProps) {
   return (
     <div className="text-sm" data-testid="tree-view">
       {/* Controller Root */}
@@ -100,6 +124,15 @@ function TreeView({ data, onRoutineClick, selectedRoutine }: TreeViewProps) {
         icon={<FileText className="w-4 h-4 text-chart-1" />}
         defaultExpanded={true}
         level={0}
+        actions={onRenameController && (
+          <button
+            onClick={onRenameController}
+            className="p-0.5 rounded hover:bg-muted"
+            data-testid="button-rename-controller"
+          >
+            <Edit2 className="w-3 h-3" />
+          </button>
+        )}
       >
         {/* Controller Tags Section */}
         {data.controllerTags.length > 0 && (
@@ -133,6 +166,28 @@ function TreeView({ data, onRoutineClick, selectedRoutine }: TreeViewProps) {
               icon={<FileText className="w-4 h-4 text-chart-3" />}
               defaultExpanded={true}
               level={2}
+              actions={(onRenameProgram || onDeleteProgram) && (
+                <span className="flex gap-0.5">
+                  {onRenameProgram && (
+                    <button
+                      onClick={() => onRenameProgram(program.name)}
+                      className="p-0.5 rounded hover:bg-muted"
+                      data-testid={`button-rename-program-${program.name}`}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                  )}
+                  {onDeleteProgram && (
+                    <button
+                      onClick={() => onDeleteProgram(program.name)}
+                      className="p-0.5 rounded hover:bg-muted text-destructive"
+                      data-testid={`button-delete-program-${program.name}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </span>
+              )}
             >
               {/* Program Tags */}
               {program.tags.length > 0 && (
@@ -171,6 +226,28 @@ function TreeView({ data, onRoutineClick, selectedRoutine }: TreeViewProps) {
                         selectedRoutine?.name === routine.name
                       }
                       level={4}
+                      actions={(onRenameRoutine || onDeleteRoutine) && (
+                        <span className="flex gap-0.5">
+                          {onRenameRoutine && (
+                            <button
+                              onClick={() => onRenameRoutine(program.name, routine.name)}
+                              className="p-0.5 rounded hover:bg-muted"
+                              data-testid={`button-rename-routine-${routine.name}`}
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
+                          {onDeleteRoutine && (
+                            <button
+                              onClick={() => onDeleteRoutine(program.name, routine.name)}
+                              className="p-0.5 rounded hover:bg-muted text-destructive"
+                              data-testid={`button-delete-routine-${routine.name}`}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </span>
+                      )}
                     />
                   ))}
                 </TreeNode>
@@ -205,9 +282,16 @@ export default function Home() {
   const [editingInstruction, setEditingInstruction] = useState<InstructionClickData | null>(null);
   const [instructionEditDialogOpen, setInstructionEditDialogOpen] = useState(false);
   
-  // New Project/Routine dialog state
+  // New Project/Routine/Program dialog state
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
+  const [newProgramDialogOpen, setNewProgramDialogOpen] = useState(false);
   const [newRoutineDialogOpen, setNewRoutineDialogOpen] = useState(false);
+  
+  // Rename/Delete dialog state
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<{ type: "program" | "routine" | "controller"; name: string; programName?: string } | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "program" | "routine"; name: string; programName?: string } | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -247,15 +331,25 @@ export default function Home() {
   const handleCreateRoutine = (programName: string, routineName: string) => {
     if (!parsedData) return;
     
+    // Check for duplicate routine name within the program
+    const program = parsedData.programs.find(p => p.name === programName);
+    if (program?.routines.some(r => r.name.toLowerCase() === routineName.toLowerCase())) {
+      toast({
+        variant: "destructive",
+        description: `Routine "${routineName}" already exists in ${programName}`,
+      });
+      return;
+    }
+    
     const updatedData: ParsedResult = {
       ...parsedData,
-      programs: parsedData.programs.map(program => {
-        if (program.name !== programName) return program;
+      programs: parsedData.programs.map(p => {
+        if (p.name !== programName) return p;
         
         return {
-          ...program,
+          ...p,
           routines: [
-            ...program.routines,
+            ...p.routines,
             {
               name: routineName,
               rungs: []
@@ -271,6 +365,163 @@ export default function Home() {
     toast({
       description: `Created new routine: ${routineName}`,
     });
+  };
+  
+  // Create a new program
+  const handleCreateProgram = (programName: string, routineName: string) => {
+    if (!parsedData) return;
+    
+    // Check if program already exists
+    if (parsedData.programs.some(p => p.name === programName)) {
+      toast({
+        variant: "destructive",
+        description: `Program "${programName}" already exists`,
+      });
+      return;
+    }
+    
+    const updatedData: ParsedResult = {
+      ...parsedData,
+      programs: [
+        ...parsedData.programs,
+        {
+          name: programName,
+          routines: [{ name: routineName, rungs: [] }],
+          tags: [],
+        }
+      ]
+    };
+    
+    setParsedData(updatedData);
+    setSelectedRoutine({ program: programName, name: routineName });
+    
+    toast({
+      description: `Created new program: ${programName}`,
+    });
+  };
+  
+  // Rename handlers
+  const openRenameDialog = (type: "program" | "routine" | "controller", name: string, programName?: string) => {
+    setRenameTarget({ type, name, programName });
+    setRenameDialogOpen(true);
+  };
+  
+  const handleRename = (newName: string) => {
+    if (!parsedData || !renameTarget) return;
+    
+    if (renameTarget.type === "controller") {
+      setParsedData({ ...parsedData, controllerName: newName });
+      toast({ description: `Renamed controller to: ${newName}` });
+    } else if (renameTarget.type === "program") {
+      // Check for duplicate program name
+      if (parsedData.programs.some(p => p.name.toLowerCase() === newName.toLowerCase() && p.name !== renameTarget.name)) {
+        toast({
+          variant: "destructive",
+          description: `Program "${newName}" already exists`,
+        });
+        return;
+      }
+      setParsedData({
+        ...parsedData,
+        programs: parsedData.programs.map(p => 
+          p.name === renameTarget.name ? { ...p, name: newName } : p
+        )
+      });
+      if (selectedRoutine?.program === renameTarget.name) {
+        setSelectedRoutine({ ...selectedRoutine, program: newName });
+      }
+      toast({ description: `Renamed program to: ${newName}` });
+    } else if (renameTarget.type === "routine" && renameTarget.programName) {
+      // Check for duplicate routine name within the program
+      const program = parsedData.programs.find(p => p.name === renameTarget.programName);
+      if (program?.routines.some(r => r.name.toLowerCase() === newName.toLowerCase() && r.name !== renameTarget.name)) {
+        toast({
+          variant: "destructive",
+          description: `Routine "${newName}" already exists in ${renameTarget.programName}`,
+        });
+        return;
+      }
+      setParsedData({
+        ...parsedData,
+        programs: parsedData.programs.map(p => {
+          if (p.name !== renameTarget.programName) return p;
+          return {
+            ...p,
+            routines: p.routines.map(r => 
+              r.name === renameTarget.name ? { ...r, name: newName } : r
+            )
+          };
+        })
+      });
+      if (selectedRoutine?.program === renameTarget.programName && selectedRoutine?.name === renameTarget.name) {
+        setSelectedRoutine({ ...selectedRoutine, name: newName });
+      }
+      toast({ description: `Renamed routine to: ${newName}` });
+    }
+    setRenameTarget(null);
+  };
+  
+  // Delete handlers
+  const openDeleteDialog = (type: "program" | "routine", name: string, programName?: string) => {
+    setDeleteTarget({ type, name, programName });
+    setDeleteDialogOpen(true);
+  };
+  
+  const handleDelete = () => {
+    if (!parsedData || !deleteTarget) return;
+    
+    if (deleteTarget.type === "program") {
+      if (parsedData.programs.length <= 1) {
+        toast({
+          variant: "destructive",
+          description: "Cannot delete the last program",
+        });
+        return;
+      }
+      setParsedData({
+        ...parsedData,
+        programs: parsedData.programs.filter(p => p.name !== deleteTarget.name)
+      });
+      if (selectedRoutine?.program === deleteTarget.name) {
+        const firstProgram = parsedData.programs.find(p => p.name !== deleteTarget.name);
+        if (firstProgram && firstProgram.routines.length > 0) {
+          setSelectedRoutine({ program: firstProgram.name, name: firstProgram.routines[0].name });
+        } else {
+          setSelectedRoutine(null);
+        }
+      }
+      toast({ description: `Deleted program: ${deleteTarget.name}` });
+    } else if (deleteTarget.type === "routine" && deleteTarget.programName) {
+      const program = parsedData.programs.find(p => p.name === deleteTarget.programName);
+      if (program && program.routines.length <= 1) {
+        toast({
+          variant: "destructive",
+          description: "Cannot delete the last routine in a program",
+        });
+        return;
+      }
+      setParsedData({
+        ...parsedData,
+        programs: parsedData.programs.map(p => {
+          if (p.name !== deleteTarget.programName) return p;
+          return {
+            ...p,
+            routines: p.routines.filter(r => r.name !== deleteTarget.name)
+          };
+        })
+      });
+      if (selectedRoutine?.program === deleteTarget.programName && selectedRoutine?.name === deleteTarget.name) {
+        const prog = parsedData.programs.find(p => p.name === deleteTarget.programName);
+        const firstRoutine = prog?.routines.find(r => r.name !== deleteTarget.name);
+        if (firstRoutine) {
+          setSelectedRoutine({ program: deleteTarget.programName, name: firstRoutine.name });
+        } else {
+          setSelectedRoutine(null);
+        }
+      }
+      toast({ description: `Deleted routine: ${deleteTarget.name}` });
+    }
+    setDeleteTarget(null);
   };
   
   // Handle instruction palette click
@@ -755,28 +1006,40 @@ export default function Home() {
                 aria-label="Upload L5X file"
               />
               
-              <div className="flex gap-1 mb-2">
+              <div className="flex gap-1 mb-2 flex-wrap">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 h-7 text-xs"
+                  className="h-7 text-xs"
                   onClick={() => setNewProjectDialogOpen(true)}
                   data-testid="button-new-project"
                 >
                   <FolderPlus className="w-3 h-3 mr-1" />
-                  New
+                  Project
                 </Button>
                 {parsedData && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-7 text-xs"
-                    onClick={() => setNewRoutineDialogOpen(true)}
-                    data-testid="button-new-routine"
-                  >
-                    <FilePlus className="w-3 h-3 mr-1" />
-                    Routine
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setNewProgramDialogOpen(true)}
+                      data-testid="button-new-program"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Program
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setNewRoutineDialogOpen(true)}
+                      data-testid="button-new-routine"
+                    >
+                      <FilePlus className="w-3 h-3 mr-1" />
+                      Routine
+                    </Button>
+                  </>
                 )}
               </div>
               
@@ -848,6 +1111,11 @@ export default function Home() {
                     data={parsedData} 
                     onRoutineClick={handleRoutineClick}
                     selectedRoutine={selectedRoutine}
+                    onRenameController={() => openRenameDialog("controller", parsedData.controllerName)}
+                    onRenameProgram={(name) => openRenameDialog("program", name)}
+                    onDeleteProgram={(name) => openDeleteDialog("program", name)}
+                    onRenameRoutine={(programName, routineName) => openRenameDialog("routine", routineName, programName)}
+                    onDeleteRoutine={(programName, routineName) => openDeleteDialog("routine", routineName, programName)}
                   />
                 </div>
               </Card>
@@ -1037,6 +1305,31 @@ export default function Home() {
         onSave={handleSaveInstruction}
         onDelete={handleDeleteInstruction}
         availableTags={getAvailableTags()}
+      />
+      
+      {/* New Program Dialog */}
+      <NewProgramDialog
+        open={newProgramDialogOpen}
+        onOpenChange={setNewProgramDialogOpen}
+        onConfirm={handleCreateProgram}
+      />
+      
+      {/* Rename Dialog */}
+      <RenameDialog
+        open={renameDialogOpen}
+        onOpenChange={setRenameDialogOpen}
+        currentName={renameTarget?.name || ""}
+        itemType={renameTarget?.type || "program"}
+        onConfirm={handleRename}
+      />
+      
+      {/* Delete Confirm Dialog */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={deleteTarget?.name || ""}
+        itemType={deleteTarget?.type || "program"}
+        onConfirm={handleDelete}
       />
     </div>
   );
