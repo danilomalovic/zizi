@@ -76,6 +76,8 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung, onRemoveRung
         /\bnew\s+(program|routine|tag)\s+(called|named|for)/i,
         /\b(rename|change\s+the\s+name\s+of)\s+(the\s+)?(program|routine)\b/i,
         /\b(add|create)\s+.*\s+(program|routine)\s+(called|named|for|to)/i,
+        /\b(create|make|build|start)\s+(a\s+)?(new\s+)?.*\s*project\b/i,
+        /\b(create|make|build)\s+(a\s+)?(motor|pump|conveyor|tank|valve|sensor|robot|plc|hvac|batch|packaging)\b/i,
       ];
       
       // Removal patterns - matches various phrasings
@@ -302,6 +304,32 @@ export function ChatPanel({ fullProject, currentRoutine, onAddRung, onRemoveRung
             }
             onRenameRoutine(parsed.programName, parsed.oldName, parsed.newName);
             successMessage = `✅ Renamed routine "${parsed.oldName}" to "${parsed.newName}"!`;
+          } else if (parsed.action === "createFullProject" && onCreateProgram) {
+            if (!parsed.programName) {
+              throw new Error("Missing program name for createFullProject action");
+            }
+            const routines = parsed.routines || ["Main"];
+            const tags = parsed.tags || [];
+            
+            onCreateProgram(parsed.programName, routines[0] || "Main");
+            
+            for (let i = 1; i < routines.length; i++) {
+              if (onCreateRoutine) {
+                onCreateRoutine(parsed.programName, routines[i]);
+              }
+            }
+            
+            for (const tag of tags) {
+              if (onCreateTag && tag.name) {
+                onCreateTag({
+                  name: tag.name,
+                  dataType: tag.dataType || "BOOL",
+                  scope: "controller" as const,
+                });
+              }
+            }
+            
+            successMessage = `✅ Created project "${parsed.programName}" with ${routines.length} routine(s) and ${tags.length} tag(s)!`;
           } else {
             successMessage = `❌ Unknown action or missing handler for: ${parsed.action}`;
           }

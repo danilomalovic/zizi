@@ -266,6 +266,9 @@ ACTION TYPES:
 3. Create a new tag: {"action": "createTag", "tagName": "NAME", "dataType": "BOOL|DINT|REAL|SINT|INT|STRING|TIMER|COUNTER", "scope": "controller|program", "programName": "PROGRAM_IF_PROGRAM_SCOPE"}
 4. Rename program: {"action": "renameProgram", "oldName": "OLD", "newName": "NEW"}
 5. Rename routine: {"action": "renameRoutine", "programName": "PROGRAM", "oldName": "OLD", "newName": "NEW"}
+6. Create a full project: {"action": "createFullProject", "programName": "NAME", "routines": ["Main", "Startup", "Faults"], "tags": [{"name": "TAG", "dataType": "TYPE"}]}
+
+IMPORTANT: When users ask to "create a project" or describe a domain like "motor control project", "conveyor system", "pump station", etc., use createFullProject with appropriate routines and tags for that domain.
 
 ERROR HANDLING: If you cannot understand the request, respond with: {"error": "Could not understand the request. Please try rephrasing."}
 
@@ -290,6 +293,15 @@ Response: {"action": "createTag", "tagName": "PumpStatus", "dataType": "BOOL", "
 
 User: "make a new routine for handling alarms"
 Response: {"action": "createRoutine", "programName": "CURRENT_PROGRAM", "routineName": "AlarmHandler"}
+
+User: "create a motor control project"
+Response: {"action": "createFullProject", "programName": "MotorControl", "routines": ["Main", "Startup", "Faults", "Jog"], "tags": [{"name": "Motor_Run", "dataType": "BOOL"}, {"name": "Motor_Fault", "dataType": "BOOL"}, {"name": "Motor_Speed", "dataType": "DINT"}, {"name": "Motor_Current", "dataType": "REAL"}, {"name": "Motor_RunTime", "dataType": "TIMER"}]}
+
+User: "create a conveyor system"
+Response: {"action": "createFullProject", "programName": "ConveyorSystem", "routines": ["Main", "Startup", "Faults", "Manual"], "tags": [{"name": "Conv_Run", "dataType": "BOOL"}, {"name": "Conv_Fault", "dataType": "BOOL"}, {"name": "Conv_Speed", "dataType": "DINT"}, {"name": "Conv_PhotoEye", "dataType": "BOOL"}, {"name": "Conv_ItemCount", "dataType": "COUNTER"}]}
+
+User: "create a pump station project"
+Response: {"action": "createFullProject", "programName": "PumpStation", "routines": ["Main", "Startup", "Faults", "Auto"], "tags": [{"name": "Pump_Run", "dataType": "BOOL"}, {"name": "Pump_Fault", "dataType": "BOOL"}, {"name": "Pump_Pressure", "dataType": "REAL"}, {"name": "Pump_FlowRate", "dataType": "REAL"}, {"name": "Pump_RunTime", "dataType": "TIMER"}]}
 
 CONTEXT: You will be given the full project context. Use existing program names when creating routines. If no program is specified for a routine, use "CURRENT_PROGRAM" as a placeholder.`;
 
