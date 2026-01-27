@@ -1,10 +1,22 @@
 import { type RungElement } from "@/utils/rllParser";
 
+export interface InstructionClickData {
+  type: string;
+  tag?: string;
+  source?: string;
+  dest?: string;
+  preset?: string;
+  accum?: string;
+  index: number;
+  rungNumber: number;
+}
+
 interface RungRendererProps {
   parsed: RungElement[];
   rungNumber: number;
   isSelected?: boolean;
   onClick?: () => void;
+  onInstructionClick?: (data: InstructionClickData) => void;
 }
 
 const GRID_SIZE = 80;
@@ -13,10 +25,27 @@ const INSTRUCTION_WIDTH = 60;
 const INSTRUCTION_HEIGHT = 30;
 const BRANCH_SPACING = 50;
 
-export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }: RungRendererProps) {
+export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, onInstructionClick }: RungRendererProps) {
   let xPosition = 40; // Start with offset for left margin
   const elements: JSX.Element[] = [];
   let maxY = RAIL_HEIGHT;
+  let instructionIndex = 0;
+
+  function handleInstructionClick(e: React.MouseEvent, instruction: any, index: number) {
+    e.stopPropagation();
+    if (onInstructionClick) {
+      onInstructionClick({
+        type: instruction.type,
+        tag: instruction.tag,
+        source: instruction.source,
+        dest: instruction.dest,
+        preset: instruction.preset,
+        accum: instruction.accum,
+        index,
+        rungNumber,
+      });
+    }
+  }
 
   function renderElement(element: RungElement, yOffset: number = 0): { width: number; height: number } {
     if (element.type === "Branch") {
@@ -29,7 +58,8 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
   function renderInstruction(instruction: any, yOffset: number): { width: number; height: number } {
     const x = xPosition;
     const y = RAIL_HEIGHT + yOffset;
-    const key = `inst-${x}-${y}-${instruction.type}`;
+    const currentIndex = instructionIndex++;
+    const key = `inst-${x}-${y}-${instruction.type}-${currentIndex}`;
 
     // Draw horizontal line to instruction
     elements.push(
@@ -49,7 +79,13 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
       // XIC: Normally open contact | |
       const centerX = x + 37.5;
       elements.push(
-        <g key={key}>
+        <g 
+          key={key}
+          className={onInstructionClick ? "cursor-pointer hover:opacity-70" : ""}
+          onClick={(e) => handleInstructionClick(e, instruction, currentIndex)}
+          data-testid={`instruction-${instruction.type}-${currentIndex}`}
+        >
+          <rect x={x + 25} y={y - 35} width={25} height={55} fill="transparent" />
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
@@ -61,7 +97,13 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
       // XIO: Normally closed contact |/|
       const centerX = x + 37.5;
       elements.push(
-        <g key={key}>
+        <g 
+          key={key}
+          className={onInstructionClick ? "cursor-pointer hover:opacity-70" : ""}
+          onClick={(e) => handleInstructionClick(e, instruction, currentIndex)}
+          data-testid={`instruction-${instruction.type}-${currentIndex}`}
+        >
+          <rect x={x + 25} y={y - 35} width={25} height={55} fill="transparent" />
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 15} x2={x + 45} y2={y - 15} stroke="currentColor" strokeWidth="2" />
@@ -74,7 +116,13 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
       // OTE: Output energize ( )
       const centerX = x + 37.5;
       elements.push(
-        <g key={key}>
+        <g 
+          key={key}
+          className={onInstructionClick ? "cursor-pointer hover:opacity-70" : ""}
+          onClick={(e) => handleInstructionClick(e, instruction, currentIndex)}
+          data-testid={`instruction-${instruction.type}-${currentIndex}`}
+        >
+          <rect x={x + 25} y={y - 35} width={25} height={55} fill="transparent" />
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
@@ -89,7 +137,13 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
       // OTL: Output latch (L)
       const centerX = x + 37.5;
       elements.push(
-        <g key={key}>
+        <g 
+          key={key}
+          className={onInstructionClick ? "cursor-pointer hover:opacity-70" : ""}
+          onClick={(e) => handleInstructionClick(e, instruction, currentIndex)}
+          data-testid={`instruction-${instruction.type}-${currentIndex}`}
+        >
+          <rect x={x + 25} y={y - 35} width={25} height={55} fill="transparent" />
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
@@ -107,7 +161,13 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
       // OTU: Output unlatch (U)
       const centerX = x + 37.5;
       elements.push(
-        <g key={key}>
+        <g 
+          key={key}
+          className={onInstructionClick ? "cursor-pointer hover:opacity-70" : ""}
+          onClick={(e) => handleInstructionClick(e, instruction, currentIndex)}
+          data-testid={`instruction-${instruction.type}-${currentIndex}`}
+        >
+          <rect x={x + 25} y={y - 35} width={25} height={55} fill="transparent" />
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 10} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
@@ -128,7 +188,12 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
       const dest = instruction.dest || "";
       
       elements.push(
-        <g key={key}>
+        <g 
+          key={key}
+          className={onInstructionClick ? "cursor-pointer hover:opacity-70" : ""}
+          onClick={(e) => handleInstructionClick(e, instruction, currentIndex)}
+          data-testid={`instruction-${instruction.type}-${currentIndex}`}
+        >
           <rect
             x={x + 30}
             y={y - 25}
@@ -137,6 +202,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
             stroke="currentColor"
             strokeWidth="2"
             fill="none"
+            className="pointer-events-auto"
           />
           <text x={x + 70} y={y - 8} textAnchor="middle" fontSize="12" fill="currentColor" className="font-bold">
             {label}
@@ -168,7 +234,12 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
     } else {
       // Generic instruction - draw as a box
       elements.push(
-        <g key={key}>
+        <g 
+          key={key}
+          className={onInstructionClick ? "cursor-pointer hover:opacity-70" : ""}
+          onClick={(e) => handleInstructionClick(e, instruction, currentIndex)}
+          data-testid={`instruction-${instruction.type}-${currentIndex}`}
+        >
           <rect
             x={x + 20}
             y={y - 15}
@@ -177,10 +248,16 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
             stroke="currentColor"
             strokeWidth="2"
             fill="none"
+            className="pointer-events-auto"
           />
           <text x={x + 45} y={y + 5} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             {instruction.type}
           </text>
+          {instruction.tag && (
+            <text x={x + 45} y={y - 25} textAnchor="middle" fontSize="10" fill="currentColor" className="font-mono">
+              {instruction.tag}
+            </text>
+          )}
         </g>
       );
     }

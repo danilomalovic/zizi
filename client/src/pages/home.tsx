@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
 import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus, FolderPlus, FilePlus } from "lucide-react";
 import { parseL5X, type ParsedResult } from "@/utils/parser";
-import { RungRenderer } from "@/components/RungRenderer";
+import { RungRenderer, type InstructionClickData } from "@/components/RungRenderer";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InstructionPalette, type InstructionDefinition } from "@/components/InstructionPalette";
 import { InstructionEditor } from "@/components/InstructionEditor";
+import { InstructionEditDialog } from "@/components/InstructionEditDialog";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
 import { NewRoutineDialog } from "@/components/NewRoutineDialog";
 import { Button } from "@/components/ui/button";
@@ -198,6 +199,10 @@ export default function Home() {
   
   // Selected rung for editing (add instructions to this rung)
   const [selectedRungNumber, setSelectedRungNumber] = useState<number | null>(null);
+  
+  // Edit existing instruction state
+  const [editingInstruction, setEditingInstruction] = useState<InstructionClickData | null>(null);
+  const [instructionEditDialogOpen, setInstructionEditDialogOpen] = useState(false);
   
   // New Project/Routine dialog state
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
@@ -520,6 +525,104 @@ export default function Home() {
     setSelectedRoutine({ program: programName, name: routineName });
     setSelectedRungNumber(null); // Reset rung selection when changing routines
   };
+  
+  // Handle click on an existing instruction within a rung (for editing)
+  const handleExistingInstructionClick = (data: InstructionClickData) => {
+    setEditingInstruction(data);
+    setInstructionEditDialogOpen(true);
+  };
+  
+  // Save edited instruction
+  const handleSaveInstruction = (instruction: InstructionClickData, updates: Record<string, string>) => {
+    if (!parsedData || !selectedRoutine) return;
+    
+    const updatedData: ParsedResult = {
+      ...parsedData,
+      programs: parsedData.programs.map(program => {
+        if (program.name !== selectedRoutine.program) return program;
+        
+        return {
+          ...program,
+          routines: program.routines.map(routine => {
+            if (routine.name !== selectedRoutine.name) return routine;
+            
+            return {
+              ...routine,
+              rungs: routine.rungs.map(rung => {
+                if (rung.number !== instruction.rungNumber) return rung;
+                
+                // Update the parsed instruction at the given index
+                const updatedParsed = [...rung.parsed];
+                if (updatedParsed[instruction.index]) {
+                  updatedParsed[instruction.index] = {
+                    ...updatedParsed[instruction.index],
+                    ...updates
+                  };
+                }
+                
+                return {
+                  ...rung,
+                  parsed: updatedParsed
+                };
+              })
+            };
+          })
+        };
+      })
+    };
+    
+    setParsedData(updatedData);
+    toast({
+      description: `Updated ${instruction.type} instruction`,
+    });
+  };
+  
+  // Delete instruction from rung
+  const handleDeleteInstruction = (instruction: InstructionClickData) => {
+    if (!parsedData || !selectedRoutine) return;
+    
+    const updatedData: ParsedResult = {
+      ...parsedData,
+      programs: parsedData.programs.map(program => {
+        if (program.name !== selectedRoutine.program) return program;
+        
+        return {
+          ...program,
+          routines: program.routines.map(routine => {
+            if (routine.name !== selectedRoutine.name) return routine;
+            
+            return {
+              ...routine,
+              rungs: routine.rungs.map(rung => {
+                if (rung.number !== instruction.rungNumber) return rung;
+                
+                // Remove the instruction at the given index
+                const updatedParsed = rung.parsed.filter((_, i) => i !== instruction.index);
+                
+                return {
+                  ...rung,
+                  parsed: updatedParsed
+                };
+              }).filter(rung => rung.parsed.length > 0) // Remove empty rungs
+            };
+          })
+        };
+      })
+    };
+    
+    setParsedData(updatedData);
+    toast({
+      description: `Deleted ${instruction.type} instruction`,
+    });
+  };
+  
+  // Get all available tags for autocomplete
+  const getAvailableTags = (): string[] => {
+    if (!parsedData) return [];
+    const tags: string[] = [...parsedData.controllerTags];
+    parsedData.programs.forEach(p => tags.push(...p.tags));
+    return tags;
+  };
 
   const handleCopyJSON = async () => {
     const rungs = getCurrentRoutineRungs();
@@ -737,6 +840,7 @@ export default function Home() {
                                 onClick={() => setSelectedRungNumber(
                                   selectedRungNumber === rung.number ? null : rung.number
                                 )}
+                                onInstructionClick={handleExistingInstructionClick}
                               />
                             ))
                           ) : (
@@ -840,6 +944,16 @@ export default function Home() {
         onOpenChange={setNewRoutineDialogOpen}
         onConfirm={handleCreateRoutine}
         programs={parsedData?.programs.map(p => p.name) || []}
+      />
+      
+      {/* Instruction Edit Dialog */}
+      <InstructionEditDialog
+        open={instructionEditDialogOpen}
+        onOpenChange={setInstructionEditDialogOpen}
+        instruction={editingInstruction}
+        onSave={handleSaveInstruction}
+        onDelete={handleDeleteInstruction}
+        availableTags={getAvailableTags()}
       />
     </div>
   );
