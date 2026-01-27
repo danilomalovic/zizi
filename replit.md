@@ -41,6 +41,7 @@ The system uses Drizzle ORM for type-safe database operations, configured for a 
 - **Project Creation**: Users can start from scratch without importing an L5X file:
     - **New Project** (`NewProjectDialog.tsx`): Creates a new controller with initial program and routine.
     - **New Routine** (`NewRoutineDialog.tsx`): Adds routines to existing programs.
+- **Traditional Ladder Logic Editing**: Click a rung to select it for editing, then add instructions that connect together on the same rung. Create new rungs with the "Add New Rung" button.
 - **Instruction Palette** (`InstructionPalette.tsx`): A categorized panel with 40+ ladder logic instructions organized in 6 categories:
     - Bit Instructions (XIC, XIO, OTE, OTL, OTU, ONS, OSR, OSF)
     - Timer/Counter (TON, TOF, RTO, CTU, CTD, RES)

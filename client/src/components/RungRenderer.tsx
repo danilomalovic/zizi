@@ -3,6 +3,8 @@ import { type RungElement } from "@/utils/rllParser";
 interface RungRendererProps {
   parsed: RungElement[];
   rungNumber: number;
+  isSelected?: boolean;
+  onClick?: () => void;
 }
 
 const GRID_SIZE = 120;
@@ -11,7 +13,7 @@ const INSTRUCTION_WIDTH = 80;
 const INSTRUCTION_HEIGHT = 40;
 const BRANCH_SPACING = 80;
 
-export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
+export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }: RungRendererProps) {
   let xPosition = 40; // Start with offset for left margin
   const elements: JSX.Element[] = [];
   let maxY = RAIL_HEIGHT;
@@ -331,9 +333,29 @@ export function RungRenderer({ parsed, rungNumber }: RungRendererProps) {
   const totalHeight = Math.max(maxY + 60, 160);
 
   return (
-    <div className="border border-border rounded-md p-4 bg-background">
+    <div 
+      className={`border-2 rounded-md p-4 bg-background transition-colors cursor-pointer hover-elevate ${
+        isSelected 
+          ? 'border-primary bg-primary/5' 
+          : 'border-border'
+      }`}
+      onClick={onClick}
+      data-testid={`rung-${rungNumber}`}
+    >
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-semibold text-muted-foreground">Rung {rungNumber}</span>
+        <span className={`text-xs font-semibold ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+          Rung {rungNumber}
+        </span>
+        {isSelected && (
+          <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
+            Editing
+          </span>
+        )}
+        {parsed.length === 0 && (
+          <span className="text-xs text-muted-foreground italic">
+            (empty - add instructions)
+          </span>
+        )}
       </div>
       <svg width={totalWidth} height={totalHeight} className="text-foreground overflow-visible">
         {/* Left rail */}

@@ -196,6 +196,9 @@ export default function Home() {
   const [selectedInstruction, setSelectedInstruction] = useState<InstructionDefinition | null>(null);
   const [instructionEditorOpen, setInstructionEditorOpen] = useState(false);
   
+  // Selected rung for editing (add instructions to this rung)
+  const [selectedRungNumber, setSelectedRungNumber] = useState<number | null>(null);
+  
   // New Project/Routine dialog state
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
   const [newRoutineDialogOpen, setNewRoutineDialogOpen] = useState(false);
@@ -226,6 +229,7 @@ export default function Home() {
     setFileName(`${controllerName}.l5x`);
     setFileSize("New Project");
     setSelectedRoutine({ program: programName, name: routineName });
+    setSelectedRungNumber(null); // Reset rung selection for new project
     setError(null);
     
     toast({
@@ -270,39 +274,126 @@ export default function Home() {
     setInstructionEditorOpen(true);
   };
   
-  // Handle instruction editor confirm
+  // Handle instruction editor confirm - add to selected rung or create new
   const handleInstructionConfirm = (instructionData: Record<string, string | number>) => {
     if (!selectedRoutine || !parsedData) return;
     
-    // Get the current rungs
+    const currentRungs = getCurrentRoutineRungs() || [];
+    const instructionType = instructionData.type as string;
+    
+    // If a rung is selected, add instruction to that rung
+    if (selectedRungNumber !== null) {
+      addInstructionToRung(selectedRoutine.program, selectedRoutine.name, selectedRungNumber, instructionData);
+      toast({
+        description: `Added ${instructionType} to rung ${selectedRungNumber}`,
+      });
+    } else {
+      // Create a new rung with the instruction
+      const nextRungNumber = currentRungs.length > 0 
+        ? Math.max(...currentRungs.map(r => r.number)) + 1 
+        : 0;
+      
+      // Build rung text
+      const params = Object.entries(instructionData)
+        .filter(([k]) => k !== 'type')
+        .map(([, v]) => v);
+      const rungText = params.length > 0 
+        ? `${instructionType}(${params.join(',')})` 
+        : instructionType;
+      
+      const newRung = {
+        number: nextRungNumber,
+        text: rungText,
+        parsed: [instructionData],
+      };
+      
+      addRungToRoutine(selectedRoutine.program, selectedRoutine.name, newRung);
+      setSelectedRungNumber(nextRungNumber); // Auto-select the new rung
+      
+      toast({
+        description: `Created rung ${nextRungNumber} with ${instructionType}`,
+      });
+    }
+    
+    setSelectedInstruction(null);
+  };
+  
+  // Add instruction to an existing rung
+  const addInstructionToRung = (
+    programName: string,
+    routineName: string,
+    rungNumber: number,
+    instruction: Record<string, string | number>
+  ) => {
+    if (!parsedData) return;
+    
+    // Convert instruction data to RungElement format
+    const rungInstruction = {
+      type: instruction.type as string,
+      tag: instruction.tag as string | undefined,
+      ...instruction,
+    };
+    
+    const updatedData: ParsedResult = {
+      ...parsedData,
+      programs: parsedData.programs.map(program => {
+        if (program.name !== programName) return program;
+        
+        return {
+          ...program,
+          routines: program.routines.map(routine => {
+            if (routine.name !== routineName) return routine;
+            
+            return {
+              ...routine,
+              rungs: routine.rungs.map(rung => {
+                if (rung.number !== rungNumber) return rung;
+                
+                // Add instruction to the rung's parsed array
+                const instructionType = instruction.type as string;
+                const params = Object.entries(instruction)
+                  .filter(([k]) => k !== 'type')
+                  .map(([, v]) => v);
+                const instructionText = params.length > 0 
+                  ? `${instructionType}(${params.join(',')})` 
+                  : instructionType;
+                
+                return {
+                  ...rung,
+                  text: rung.text ? `${rung.text} ${instructionText}` : instructionText,
+                  parsed: [...rung.parsed, rungInstruction as any],
+                };
+              })
+            };
+          })
+        };
+      })
+    };
+    
+    setParsedData(updatedData);
+  };
+  
+  // Create a new empty rung and select it for editing
+  const handleCreateNewRung = () => {
+    if (!selectedRoutine || !parsedData) return;
+    
     const currentRungs = getCurrentRoutineRungs() || [];
     const nextRungNumber = currentRungs.length > 0 
       ? Math.max(...currentRungs.map(r => r.number)) + 1 
       : 0;
     
-    // Build rung text - handle instructions with no parameters
-    const instructionType = instructionData.type as string;
-    const params = Object.entries(instructionData)
-      .filter(([k]) => k !== 'type')
-      .map(([, v]) => v);
-    const rungText = params.length > 0 
-      ? `${instructionType}(${params.join(',')})` 
-      : instructionType;
-    
-    // Create a new rung with the instruction
     const newRung = {
       number: nextRungNumber,
-      text: rungText,
-      parsed: [instructionData],
+      text: "",
+      parsed: [],
     };
     
     addRungToRoutine(selectedRoutine.program, selectedRoutine.name, newRung);
+    setSelectedRungNumber(nextRungNumber);
     
     toast({
-      description: `Added ${instructionType} instruction as rung ${nextRungNumber}`,
+      description: `Created rung ${nextRungNumber} - now add instructions`,
     });
-    
-    setSelectedInstruction(null);
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,6 +413,7 @@ export default function Home() {
     setError(null);
     setParsedData(null);
     setSelectedRoutine(null);
+    setSelectedRungNumber(null); // Reset rung selection for new file
 
     try {
       const text = await file.text();
@@ -386,10 +478,6 @@ export default function Home() {
     };
 
     setParsedData(updatedData);
-    
-    toast({
-      description: `Added rung ${newRung.number} to ${routineName}`,
-    });
   };
 
   // Function to remove a rung from a specific routine (immutable update)
@@ -430,6 +518,7 @@ export default function Home() {
 
   const handleRoutineClick = (programName: string, routineName: string) => {
     setSelectedRoutine({ program: programName, name: routineName });
+    setSelectedRungNumber(null); // Reset rung selection when changing routines
   };
 
   const handleCopyJSON = async () => {
@@ -640,20 +729,37 @@ export default function Home() {
                   <div className="flex-1 overflow-auto bg-muted/30 min-h-0">
                     {(() => {
                       const rungs = getCurrentRoutineRungs();
-                      return rungs && rungs.length > 0 ? (
+                      return (
                         <div className="p-4 space-y-4">
-                          {rungs.map((rung) => (
-                            <RungRenderer
-                              key={rung.number}
-                              parsed={rung.parsed}
-                              rungNumber={rung.number}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full w-full text-muted-foreground p-6">
-                          <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
-                          <div className="text-sm">No rungs found in this routine</div>
+                          {rungs && rungs.length > 0 ? (
+                            rungs.map((rung) => (
+                              <RungRenderer
+                                key={rung.number}
+                                parsed={rung.parsed}
+                                rungNumber={rung.number}
+                                isSelected={selectedRungNumber === rung.number}
+                                onClick={() => setSelectedRungNumber(
+                                  selectedRungNumber === rung.number ? null : rung.number
+                                )}
+                              />
+                            ))
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                              <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
+                              <div className="text-sm">No rungs yet</div>
+                            </div>
+                          )}
+                          
+                          {/* New Rung Button */}
+                          <Button
+                            variant="outline"
+                            className="w-full border-dashed"
+                            onClick={handleCreateNewRung}
+                            data-testid="button-new-rung"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add New Rung
+                          </Button>
                         </div>
                       );
                     })()}
@@ -691,7 +797,21 @@ export default function Home() {
                   onRemoveRung={removeRungFromRoutine}
                 />
               </TabsContent>
-              <TabsContent value="instructions" className="flex-1 min-h-0 mt-2">
+              <TabsContent value="instructions" className="flex-1 min-h-0 mt-2 flex flex-col gap-2">
+                {selectedRoutine && (
+                  <div className="p-2 bg-muted rounded-md text-xs">
+                    {selectedRungNumber !== null ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-primary">Editing Rung {selectedRungNumber}</span>
+                        <span className="text-muted-foreground">Click an instruction to add it</span>
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground">
+                        Select a rung to add instructions, or click an instruction to create a new rung
+                      </div>
+                    )}
+                  </div>
+                )}
                 <InstructionPalette 
                   onAddInstruction={handleInstructionClick}
                   disabled={!selectedRoutine}
