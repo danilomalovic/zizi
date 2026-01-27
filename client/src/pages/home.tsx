@@ -6,6 +6,7 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { InstructionPalette, type InstructionDefinition } from "@/components/InstructionPalette";
 import { InstructionEditor } from "@/components/InstructionEditor";
 import { InstructionEditDialog } from "@/components/InstructionEditDialog";
+import { TagManager } from "@/components/TagManager";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
 import { NewRoutineDialog } from "@/components/NewRoutineDialog";
 import { Button } from "@/components/ui/button";
@@ -623,6 +624,70 @@ export default function Home() {
     parsedData.programs.forEach(p => tags.push(...p.tags));
     return tags;
   };
+  
+  // Tag Management handlers
+  const handleAddTag = (tag: { name: string; dataType: string; scope: "controller" | "program"; programName?: string }) => {
+    if (!parsedData) return;
+    
+    if (tag.scope === "controller") {
+      setParsedData({
+        ...parsedData,
+        controllerTags: [...parsedData.controllerTags, tag.name],
+      });
+    } else if (tag.programName) {
+      setParsedData({
+        ...parsedData,
+        programs: parsedData.programs.map(p => {
+          if (p.name !== tag.programName) return p;
+          return { ...p, tags: [...p.tags, tag.name] };
+        }),
+      });
+    }
+    
+    toast({ description: `Created tag: ${tag.name}` });
+  };
+  
+  const handleEditTag = (oldName: string, newTag: { name: string; dataType: string; scope: "controller" | "program"; programName?: string }) => {
+    if (!parsedData) return;
+    
+    if (newTag.scope === "controller") {
+      setParsedData({
+        ...parsedData,
+        controllerTags: parsedData.controllerTags.map(t => t === oldName ? newTag.name : t),
+      });
+    } else if (newTag.programName) {
+      setParsedData({
+        ...parsedData,
+        programs: parsedData.programs.map(p => {
+          if (p.name !== newTag.programName) return p;
+          return { ...p, tags: p.tags.map(t => t === oldName ? newTag.name : t) };
+        }),
+      });
+    }
+    
+    toast({ description: `Updated tag: ${newTag.name}` });
+  };
+  
+  const handleDeleteTag = (tagName: string, scope: "controller" | "program", programName?: string) => {
+    if (!parsedData) return;
+    
+    if (scope === "controller") {
+      setParsedData({
+        ...parsedData,
+        controllerTags: parsedData.controllerTags.filter(t => t !== tagName),
+      });
+    } else if (programName) {
+      setParsedData({
+        ...parsedData,
+        programs: parsedData.programs.map(p => {
+          if (p.name !== programName) return p;
+          return { ...p, tags: p.tags.filter(t => t !== tagName) };
+        }),
+      });
+    }
+    
+    toast({ description: `Deleted tag: ${tagName}` });
+  };
 
   const handleCopyJSON = async () => {
     const rungs = getCurrentRoutineRungs();
@@ -875,15 +940,16 @@ export default function Home() {
             </Card>
           </section>
 
-          {/* Right Panel - Instructions & AI Chat */}
-          <section className="flex flex-col h-full xl:col-span-4 min-h-0" aria-label="Instructions and AI Chat">
+          {/* Right Panel - Instructions, Tags & AI Chat */}
+          <section className="flex flex-col h-full xl:col-span-4 min-h-0" aria-label="Instructions, Tags and AI Chat">
             <Tabs defaultValue="chat" className="flex flex-col h-full">
-              <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                <TabsTrigger value="chat" data-testid="tab-chat">Ask AI</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+                <TabsTrigger value="chat" data-testid="tab-chat">AI</TabsTrigger>
                 <TabsTrigger value="instructions" data-testid="tab-instructions">
-                  <Plus className="w-4 h-4 mr-1" />
+                  <Plus className="w-3 h-3 mr-1" />
                   Add
                 </TabsTrigger>
+                <TabsTrigger value="tags" data-testid="tab-tags">Tags</TabsTrigger>
               </TabsList>
               <TabsContent value="chat" className="flex-1 min-h-0 mt-2">
                 <ChatPanel 
@@ -916,6 +982,23 @@ export default function Home() {
                   onAddInstruction={handleInstructionClick}
                   disabled={!selectedRoutine}
                 />
+              </TabsContent>
+              <TabsContent value="tags" className="flex-1 min-h-0 mt-2">
+                <Card className="h-full flex flex-col">
+                  {parsedData ? (
+                    <TagManager
+                      controllerTags={parsedData.controllerTags}
+                      programs={parsedData.programs}
+                      onAddTag={handleAddTag}
+                      onEditTag={handleEditTag}
+                      onDeleteTag={handleDeleteTag}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      Load or create a project to manage tags
+                    </div>
+                  )}
+                </Card>
               </TabsContent>
             </Tabs>
           </section>
