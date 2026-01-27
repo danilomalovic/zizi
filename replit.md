@@ -38,6 +38,9 @@ The system uses Drizzle ORM for type-safe database operations, configured for a 
     - A **Right Panel** with tabs for:
         - **Ask AI**: AI-powered chat assistant for questions, edits, and removals.
         - **Add**: Visual instruction palette for adding ladder logic instructions.
+- **Project Creation**: Users can start from scratch without importing an L5X file:
+    - **New Project** (`NewProjectDialog.tsx`): Creates a new controller with initial program and routine.
+    - **New Routine** (`NewRoutineDialog.tsx`): Adds routines to existing programs.
 - **Instruction Palette** (`InstructionPalette.tsx`): A categorized panel with 40+ ladder logic instructions organized in 6 categories:
     - Bit Instructions (XIC, XIO, OTE, OTL, OTU, ONS, OSR, OSF)
     - Timer/Counter (TON, TOF, RTO, CTU, CTD, RES)

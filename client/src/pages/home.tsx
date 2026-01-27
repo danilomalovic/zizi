@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus, FolderPlus, FilePlus } from "lucide-react";
 import { parseL5X, type ParsedResult } from "@/utils/parser";
 import { RungRenderer } from "@/components/RungRenderer";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InstructionPalette, type InstructionDefinition } from "@/components/InstructionPalette";
 import { InstructionEditor } from "@/components/InstructionEditor";
+import { NewProjectDialog } from "@/components/NewProjectDialog";
+import { NewRoutineDialog } from "@/components/NewRoutineDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -194,8 +196,72 @@ export default function Home() {
   const [selectedInstruction, setSelectedInstruction] = useState<InstructionDefinition | null>(null);
   const [instructionEditorOpen, setInstructionEditorOpen] = useState(false);
   
+  // New Project/Routine dialog state
+  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
+  const [newRoutineDialogOpen, setNewRoutineDialogOpen] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Create a new project from scratch
+  const handleCreateProject = (controllerName: string, programName: string, routineName: string) => {
+    const newProject: ParsedResult = {
+      controllerName,
+      programs: [
+        {
+          name: programName,
+          routines: [
+            {
+              name: routineName,
+              rungs: []
+            }
+          ],
+          tags: []
+        }
+      ],
+      controllerTags: []
+    };
+    
+    setParsedData(newProject);
+    setFileName(`${controllerName}.l5x`);
+    setFileSize("New Project");
+    setSelectedRoutine({ program: programName, name: routineName });
+    setError(null);
+    
+    toast({
+      description: `Created new project: ${controllerName}`,
+    });
+  };
+  
+  // Add a new routine to an existing program
+  const handleCreateRoutine = (programName: string, routineName: string) => {
+    if (!parsedData) return;
+    
+    const updatedData: ParsedResult = {
+      ...parsedData,
+      programs: parsedData.programs.map(program => {
+        if (program.name !== programName) return program;
+        
+        return {
+          ...program,
+          routines: [
+            ...program.routines,
+            {
+              name: routineName,
+              rungs: []
+            }
+          ]
+        };
+      })
+    };
+    
+    setParsedData(updatedData);
+    setSelectedRoutine({ program: programName, name: routineName });
+    
+    toast({
+      description: `Created new routine: ${routineName}`,
+    });
+  };
   
   // Handle instruction palette click
   const handleInstructionClick = (instruction: InstructionDefinition) => {
@@ -430,24 +496,49 @@ export default function Home() {
                 aria-label="Upload L5X file"
               />
               
+              <div className="flex gap-2 mb-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setNewProjectDialogOpen(true)}
+                  data-testid="button-new-project"
+                >
+                  <FolderPlus className="w-4 h-4 mr-1" />
+                  New Project
+                </Button>
+                {parsedData && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setNewRoutineDialogOpen(true)}
+                    data-testid="button-new-routine"
+                  >
+                    <FilePlus className="w-4 h-4 mr-1" />
+                    New Routine
+                  </Button>
+                )}
+              </div>
+              
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
-                className="w-full border-2 border-dashed border-border rounded-md p-6 hover-elevate active-elevate-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full border-2 border-dashed border-border rounded-md p-4 hover-elevate active-elevate-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="button-select-file"
                 aria-label="Select L5X file to upload"
               >
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-1">
                   {loading ? (
-                    <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+                    <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
                   ) : (
-                    <Upload className="w-8 h-8 text-muted-foreground" />
+                    <Upload className="w-6 h-6 text-muted-foreground" />
                   )}
                   <div className="text-sm font-medium text-foreground">
-                    {loading ? "Parsing..." : "Select .L5X File"}
+                    {loading ? "Parsing..." : "Import .L5X File"}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Click to browse
+                    Or start fresh with New Project
                   </div>
                 </div>
               </button>
@@ -617,7 +708,22 @@ export default function Home() {
         open={instructionEditorOpen}
         onOpenChange={setInstructionEditorOpen}
         onConfirm={handleInstructionConfirm}
-        availableTags={parsedData?.controllerTags?.map(t => ({ name: t.name, type: t.dataType })) || []}
+        availableTags={parsedData?.controllerTags?.map(t => ({ name: t, type: "BOOL" })) || []}
+      />
+      
+      {/* New Project Dialog */}
+      <NewProjectDialog
+        open={newProjectDialogOpen}
+        onOpenChange={setNewProjectDialogOpen}
+        onConfirm={handleCreateProject}
+      />
+      
+      {/* New Routine Dialog */}
+      <NewRoutineDialog
+        open={newRoutineDialogOpen}
+        onOpenChange={setNewRoutineDialogOpen}
+        onConfirm={handleCreateRoutine}
+        programs={parsedData?.programs.map(p => p.name) || []}
       />
     </div>
   );
