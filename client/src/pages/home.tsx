@@ -1,5 +1,7 @@
-import { useState, useRef } from "react";
-import { Upload, Download, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus, FolderPlus, FilePlus, Edit2, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Upload, Download, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus, FolderPlus, FilePlus, Edit2, Trash2, Undo2, Redo2, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useHistory } from "@/hooks/useHistory";
 import { parseL5X, type ParsedResult } from "@/utils/parser";
 import { downloadL5X } from "@/utils/l5xExporter";
 import { RungRenderer, type InstructionClickData } from "@/components/RungRenderer";
@@ -100,6 +102,7 @@ interface TreeViewProps {
   data: ParsedResult;
   onRoutineClick: (programName: string, routineName: string) => void;
   selectedRoutine: { program: string; name: string } | null;
+  searchQuery?: string;
   onRenameController?: () => void;
   onRenameProgram?: (programName: string) => void;
   onDeleteProgram?: (programName: string) => void;
@@ -111,12 +114,40 @@ function TreeView({
   data, 
   onRoutineClick, 
   selectedRoutine,
+  searchQuery = "",
   onRenameController,
   onRenameProgram,
   onDeleteProgram,
   onRenameRoutine,
   onDeleteRoutine
 }: TreeViewProps) {
+  const lowerQuery = searchQuery.toLowerCase();
+  const matchesSearch = (text: string) => !searchQuery || text.toLowerCase().includes(lowerQuery);
+  const routineMatchesSearch = (routine: typeof data.programs[0]['routines'][0]) => {
+    if (matchesSearch(routine.name)) return true;
+    // Also search in rung text and instructions
+    return routine.rungs.some(rung => 
+      rung.text?.toLowerCase().includes(lowerQuery) ||
+      rung.parsed?.some((inst: any) => 
+        inst.type?.toLowerCase().includes(lowerQuery) ||
+        inst.tag?.toLowerCase().includes(lowerQuery)
+      )
+    );
+  };
+  
+  const filteredControllerTags = data.controllerTags.filter(matchesSearch);
+  const filteredPrograms = data.programs
+    .map(program => ({
+      ...program,
+      tags: program.tags.filter(matchesSearch),
+      routines: program.routines.filter(routineMatchesSearch)
+    }))
+    .filter(program => 
+      matchesSearch(program.name) || 
+      program.tags.length > 0 || 
+      program.routines.length > 0
+    );
+
   return (
     <div className="text-sm" data-testid="tree-view">
       {/* Controller Root */}
@@ -136,14 +167,14 @@ function TreeView({
         )}
       >
         {/* Controller Tags Section */}
-        {data.controllerTags.length > 0 && (
+        {filteredControllerTags.length > 0 && (
           <TreeNode 
             label="Controller Tags"
-            icon={<Badge variant="secondary" className="w-4 h-4 flex items-center justify-center text-[10px] p-0">{data.controllerTags.length}</Badge>}
-            defaultExpanded={false}
+            icon={<Badge variant="secondary" className="w-4 h-4 flex items-center justify-center text-[10px] p-0">{filteredControllerTags.length}</Badge>}
+            defaultExpanded={!!searchQuery}
             level={1}
           >
-            {data.controllerTags.map((tag, index) => (
+            {filteredControllerTags.map((tag, index) => (
               <TreeNode
                 key={`controller-tag-${tag}-${index}`}
                 label={tag}
@@ -154,13 +185,14 @@ function TreeView({
         )}
 
         {/* Programs Section */}
+        {filteredPrograms.length > 0 && (
         <TreeNode 
           label="Programs"
-          icon={<Badge variant="secondary" className="w-4 h-4 flex items-center justify-center text-[10px] p-0">{data.programs.length}</Badge>}
+          icon={<Badge variant="secondary" className="w-4 h-4 flex items-center justify-center text-[10px] p-0">{filteredPrograms.length}</Badge>}
           defaultExpanded={true}
           level={1}
         >
-          {data.programs.map((program, pIndex) => (
+          {filteredPrograms.map((program, pIndex) => (
             <TreeNode
               key={`program-${program.name}-${pIndex}`}
               label={program.name}
@@ -256,19 +288,24 @@ function TreeView({
             </TreeNode>
           ))}
         </TreeNode>
+        )}
       </TreeNode>
     </div>
   );
 }
 
 export default function Home() {
-  const [parsedData, setParsedData] = useState<ParsedResult | null>(null);
+  const { state: parsedData, set: setParsedData, undo, redo, reset: resetParsedData, canUndo, canRedo } = useHistory<ParsedResult>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
   
+  
   const [selectedRoutine, setSelectedRoutine] = useState<{ program: string; name: string } | null>(null);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [copied, setCopied] = useState(false);
   
@@ -278,6 +315,7 @@ export default function Home() {
   
   // Selected rung for editing (add instructions to this rung)
   const [selectedRungNumber, setSelectedRungNumber] = useState<number | null>(null);
+  const [copiedRung, setCopiedRung] = useState<any | null>(null);
   
   // Edit existing instruction state
   const [editingInstruction, setEditingInstruction] = useState<InstructionClickData | null>(null);
@@ -296,6 +334,123 @@ export default function Home() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Validate selection when parsedData changes (e.g., after undo/redo)
+  useEffect(() => {
+    if (!parsedData || !selectedRoutine) return;
+    
+    // Check if the selected routine still exists
+    const program = parsedData.programs.find(p => p.name === selectedRoutine.program);
+    const routine = program?.routines.find(r => r.name === selectedRoutine.name);
+    
+    if (!program || !routine) {
+      // Selected routine no longer exists, clear selection
+      setSelectedRoutine(null);
+      setSelectedRungNumber(null);
+    } else if (selectedRungNumber !== null) {
+      // Check if selected rung still exists
+      const rungExists = routine.rungs.some(r => r.number === selectedRungNumber);
+      if (!rungExists) {
+        setSelectedRungNumber(null);
+      }
+    }
+  }, [parsedData, selectedRoutine, selectedRungNumber]);
+  
+  // Reset selection after undo/redo to avoid pointing at non-existent elements
+  const handleUndo = useCallback(() => {
+    undo();
+    setSelectedRungNumber(null);
+  }, [undo]);
+  
+  const handleRedo = useCallback(() => {
+    redo();
+    setSelectedRungNumber(null);
+  }, [redo]);
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if focus is in an input, textarea, or contenteditable
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      
+      // Check if there's a text selection (don't intercept copy/paste if user is copying text)
+      const selection = window.getSelection();
+      const hasTextSelection = selection && selection.toString().length > 0;
+      
+      // Undo: Ctrl+Z
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo) handleUndo();
+      } 
+      // Redo: Ctrl+Y or Ctrl+Shift+Z
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        if (canRedo) handleRedo();
+      }
+      // Copy rung: Ctrl+C (only if no text selected and rung is selected)
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !hasTextSelection && selectedRungNumber !== null && selectedRoutine && parsedData) {
+        e.preventDefault();
+        const program = parsedData.programs.find(p => p.name === selectedRoutine.program);
+        const routine = program?.routines.find(r => r.name === selectedRoutine.name);
+        const rung = routine?.rungs.find(r => r.number === selectedRungNumber);
+        if (rung) {
+          setCopiedRung({ ...rung });
+          toast({ description: `Copied rung ${selectedRungNumber}` });
+        }
+      }
+      // Paste rung: Ctrl+V (only if no text selected)
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !hasTextSelection && copiedRung && selectedRoutine && parsedData) {
+        e.preventDefault();
+        const updatedData: ParsedResult = {
+          ...parsedData,
+          programs: parsedData.programs.map(p => {
+            if (p.name !== selectedRoutine.program) return p;
+            return {
+              ...p,
+              routines: p.routines.map(r => {
+                if (r.name !== selectedRoutine.name) return r;
+                const newRungNumber = r.rungs.length > 0 ? Math.max(...r.rungs.map(rg => rg.number)) + 1 : 0;
+                return {
+                  ...r,
+                  rungs: [...r.rungs, { ...copiedRung, number: newRungNumber }]
+                };
+              })
+            };
+          })
+        };
+        setParsedData(updatedData);
+        toast({ description: `Pasted rung` });
+      }
+      // Delete rung: Delete key
+      else if (e.key === 'Delete' && selectedRungNumber !== null && selectedRoutine && parsedData) {
+        e.preventDefault();
+        const updatedData: ParsedResult = {
+          ...parsedData,
+          programs: parsedData.programs.map(p => {
+            if (p.name !== selectedRoutine.program) return p;
+            return {
+              ...p,
+              routines: p.routines.map(r => {
+                if (r.name !== selectedRoutine.name) return r;
+                return {
+                  ...r,
+                  rungs: r.rungs.filter(rg => rg.number !== selectedRungNumber)
+                    .map((rg, idx) => ({ ...rg, number: idx }))
+                };
+              })
+            };
+          })
+        };
+        setParsedData(updatedData);
+        setSelectedRungNumber(null);
+        toast({ description: `Deleted rung ${selectedRungNumber}` });
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, handleUndo, handleRedo, selectedRungNumber, selectedRoutine, parsedData, copiedRung, setParsedData, toast]);
   
   // Create a new project from scratch
   const handleCreateProject = (controllerName: string, programName: string, routineName: string) => {
@@ -1063,18 +1218,42 @@ export default function Home() {
                 </div>
               </button>
 
-              {/* Export Button */}
+              {/* Undo/Redo and Export Buttons */}
               {parsedData && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-2 h-7 text-xs"
-                  onClick={() => downloadL5X(parsedData, fileName?.replace(/\.[^.]+$/, '_export.L5X') || 'project.L5X')}
-                  data-testid="button-export-l5x"
-                >
-                  <Download className="w-3 h-3 mr-1" />
-                  Export L5X
-                </Button>
+                <div className="mt-2 flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={handleUndo}
+                    disabled={!canUndo}
+                    title="Undo (Ctrl+Z)"
+                    data-testid="button-undo"
+                  >
+                    <Undo2 className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={handleRedo}
+                    disabled={!canRedo}
+                    title="Redo (Ctrl+Y)"
+                    data-testid="button-redo"
+                  >
+                    <Redo2 className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-7 text-xs"
+                    onClick={() => downloadL5X(parsedData, fileName?.replace(/\.[^.]+$/, '_export.L5X') || 'project.L5X')}
+                    data-testid="button-export-l5x"
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    Export L5X
+                  </Button>
+                </div>
               )}
 
               {/* File Status */}
@@ -1117,8 +1296,29 @@ export default function Home() {
             {/* Tree View */}
             {parsedData && (
               <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
-                <div className="p-2 border-b border-border bg-card flex-shrink-0">
+                <div className="p-2 border-b border-border bg-card flex-shrink-0 space-y-2">
                   <h2 className="text-sm font-semibold text-foreground">Structure</h2>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search..."
+                      className="pl-7 pr-7 h-7 text-xs"
+                      data-testid="input-search-tree"
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-6"
+                        onClick={() => setSearchQuery("")}
+                        data-testid="button-clear-search"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-2 min-h-0">
@@ -1126,6 +1326,7 @@ export default function Home() {
                     data={parsedData} 
                     onRoutineClick={handleRoutineClick}
                     selectedRoutine={selectedRoutine}
+                    searchQuery={searchQuery}
                     onRenameController={() => openRenameDialog("controller", parsedData.controllerName)}
                     onRenameProgram={(name) => openRenameDialog("program", name)}
                     onDeleteProgram={(name) => openDeleteDialog("program", name)}
