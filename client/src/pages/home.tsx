@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus, FolderPlus, FilePlus, Edit2, Trash2 } from "lucide-react";
+import { Upload, Download, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus, FolderPlus, FilePlus, Edit2, Trash2 } from "lucide-react";
 import { parseL5X, type ParsedResult } from "@/utils/parser";
+import { downloadL5X } from "@/utils/l5xExporter";
 import { RungRenderer, type InstructionClickData } from "@/components/RungRenderer";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InstructionPalette, type InstructionDefinition } from "@/components/InstructionPalette";
@@ -1061,6 +1062,20 @@ export default function Home() {
                   </div>
                 </div>
               </button>
+
+              {/* Export Button */}
+              {parsedData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2 h-7 text-xs"
+                  onClick={() => downloadL5X(parsedData, fileName?.replace(/\.[^.]+$/, '_export.L5X') || 'project.L5X')}
+                  data-testid="button-export-l5x"
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Export L5X
+                </Button>
+              )}
 
               {/* File Status */}
               {fileName && !error && parsedData && (
