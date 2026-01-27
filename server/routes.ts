@@ -246,6 +246,91 @@ Generate only the JSON structure for the ladder logic instructions.`;
     }
   });
 
+  app.post("/api/ai/action", async (req, res) => {
+    try {
+      const { question, context } = req.body;
+
+      if (!question) {
+        return res.status(400).json({ error: "Question is required" });
+      }
+
+      const systemPrompt = `You are a project management engine for PLC ladder logic projects. Your job is to translate a user's natural language request into a JSON action object.
+
+CRITICAL RULES:
+
+JSON ONLY: Your entire response must be only the raw JSON. DO NOT include any conversational text, explanations, markdown, or apologies.
+
+ACTION TYPES:
+1. Create a new program: {"action": "createProgram", "programName": "NAME", "routineName": "Main"}
+2. Create a new routine: {"action": "createRoutine", "programName": "EXISTING_PROGRAM", "routineName": "NEW_ROUTINE_NAME"}
+3. Create a new tag: {"action": "createTag", "tagName": "NAME", "dataType": "BOOL|DINT|REAL|SINT|INT|STRING|TIMER|COUNTER", "scope": "controller|program", "programName": "PROGRAM_IF_PROGRAM_SCOPE"}
+4. Rename program: {"action": "renameProgram", "oldName": "OLD", "newName": "NEW"}
+5. Rename routine: {"action": "renameRoutine", "programName": "PROGRAM", "oldName": "OLD", "newName": "NEW"}
+
+ERROR HANDLING: If you cannot understand the request, respond with: {"error": "Could not understand the request. Please try rephrasing."}
+
+SMART DEFAULTS:
+- For new programs, always include a default routine named "Main" unless specified otherwise
+- For tags, default to "BOOL" type and "controller" scope unless specified
+- Use PascalCase for names (e.g., "MyNewProgram", "StartSequence")
+
+EXAMPLES:
+
+User: "create a new program called Conveyor"
+Response: {"action": "createProgram", "programName": "Conveyor", "routineName": "Main"}
+
+User: "add a routine named Startup to MainProgram"
+Response: {"action": "createRoutine", "programName": "MainProgram", "routineName": "Startup"}
+
+User: "create a DINT tag called MotorSpeed"
+Response: {"action": "createTag", "tagName": "MotorSpeed", "dataType": "DINT", "scope": "controller"}
+
+User: "add a boolean tag for pump status in the Pumps program"
+Response: {"action": "createTag", "tagName": "PumpStatus", "dataType": "BOOL", "scope": "program", "programName": "Pumps"}
+
+User: "make a new routine for handling alarms"
+Response: {"action": "createRoutine", "programName": "CURRENT_PROGRAM", "routineName": "AlarmHandler"}
+
+CONTEXT: You will be given the full project context. Use existing program names when creating routines. If no program is specified for a routine, use "CURRENT_PROGRAM" as a placeholder.`;
+
+      const userPrompt = `User's Request: ${question}
+
+${context?.fullProject ? `
+Full Project Context:
+Controller: ${context.fullProject.controllerName}
+Controller Tags: ${context.fullProject.controllerTags.slice(0, 50).join(', ')}${context.fullProject.controllerTags.length > 50 ? '...' : ''}
+Programs: ${context.fullProject.programs.map((p: any) => `${p.name} (routines: ${p.routines.map((r: any) => r.name).join(', ')})`).join('; ')}
+` : ''}
+
+${context?.currentRoutine ? `
+Currently Selected:
+Program: ${context.currentRoutine.program}
+Routine: ${context.currentRoutine.name}
+` : ''}
+
+Generate the JSON action object for this request.`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.0,
+        max_tokens: 500,
+      });
+
+      const response = completion.choices[0]?.message?.content || '{"error": "Could not parse request."}';
+
+      res.json({ response });
+    } catch (error) {
+      console.error("AI Action Error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to get AI action response' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

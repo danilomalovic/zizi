@@ -1455,6 +1455,45 @@ export default function Home() {
                   } : undefined}
                   onAddRung={addRungToRoutine}
                   onRemoveRung={removeRungFromRoutine}
+                  onCreateProgram={handleCreateProgram}
+                  onCreateRoutine={handleCreateRoutine}
+                  onCreateTag={handleAddTag}
+                  onRenameProgram={(oldName, newName) => {
+                    if (!parsedData) return;
+                    if (parsedData.programs.some(p => p.name.toLowerCase() === newName.toLowerCase() && p.name !== oldName)) {
+                      toast({ description: `Program "${newName}" already exists`, variant: "destructive", duration: 1000 });
+                      return;
+                    }
+                    setParsedData({
+                      ...parsedData,
+                      programs: parsedData.programs.map(p => p.name === oldName ? { ...p, name: newName } : p),
+                    });
+                    if (selectedRoutine?.program === oldName) {
+                      setSelectedRoutine({ ...selectedRoutine, program: newName });
+                    }
+                    toast({ description: `Renamed program to: ${newName}`, duration: 1000 });
+                  }}
+                  onRenameRoutine={(programName, oldName, newName) => {
+                    if (!parsedData) return;
+                    const program = parsedData.programs.find(p => p.name === programName);
+                    if (program?.routines.some(r => r.name.toLowerCase() === newName.toLowerCase() && r.name !== oldName)) {
+                      toast({ description: `Routine "${newName}" already exists in ${programName}`, variant: "destructive", duration: 1000 });
+                      return;
+                    }
+                    setParsedData({
+                      ...parsedData,
+                      programs: parsedData.programs.map(p => 
+                        p.name !== programName ? p : {
+                          ...p,
+                          routines: p.routines.map(r => r.name === oldName ? { ...r, name: newName } : r),
+                        }
+                      ),
+                    });
+                    if (selectedRoutine?.program === programName && selectedRoutine?.name === oldName) {
+                      setSelectedRoutine({ ...selectedRoutine, name: newName });
+                    }
+                    toast({ description: `Renamed routine to: ${newName}`, duration: 1000 });
+                  }}
                 />
               </TabsContent>
               <TabsContent value="instructions" className="flex-1 min-h-0 mt-2 flex flex-col gap-2">
