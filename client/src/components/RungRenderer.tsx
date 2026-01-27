@@ -7,11 +7,11 @@ interface RungRendererProps {
   onClick?: () => void;
 }
 
-const GRID_SIZE = 120;
-const RAIL_HEIGHT = 60;
-const INSTRUCTION_WIDTH = 80;
-const INSTRUCTION_HEIGHT = 40;
-const BRANCH_SPACING = 80;
+const GRID_SIZE = 80;
+const RAIL_HEIGHT = 35;
+const INSTRUCTION_WIDTH = 60;
+const INSTRUCTION_HEIGHT = 30;
+const BRANCH_SPACING = 50;
 
 export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }: RungRendererProps) {
   let xPosition = 40; // Start with offset for left margin
@@ -329,12 +329,12 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
     renderElement(element, 0);
   });
 
-  const totalWidth = xPosition + 80;
-  const totalHeight = Math.max(maxY + 60, 160);
+  const totalWidth = xPosition + 50;
+  const totalHeight = Math.max(maxY + 30, 80);
 
   return (
     <div 
-      className={`border-2 rounded-md p-4 bg-background transition-colors cursor-pointer hover-elevate ${
+      className={`border rounded-md p-2 bg-background transition-colors cursor-pointer hover-elevate ${
         isSelected 
           ? 'border-primary bg-primary/5' 
           : 'border-border'
@@ -342,18 +342,18 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick }
       onClick={onClick}
       data-testid={`rung-${rungNumber}`}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <span className={`text-xs font-semibold ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
-          Rung {rungNumber}
+      <div className="flex items-center gap-2 mb-1">
+        <span className={`text-[10px] font-semibold ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+          {rungNumber}
         </span>
         {isSelected && (
-          <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
+          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
             Editing
           </span>
         )}
         {parsed.length === 0 && (
-          <span className="text-xs text-muted-foreground italic">
-            (empty - add instructions)
+          <span className="text-[10px] text-muted-foreground italic">
+            (empty)
           </span>
         )}
       </div>

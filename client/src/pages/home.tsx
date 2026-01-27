@@ -561,20 +561,22 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border px-4 py-4 md:px-6">
-        <h1 className="text-2xl font-semibold text-foreground">L5X Ladder Logic IDE</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Edit and manage RSLogix 5000 ladder logic with AI assistance
-        </p>
+      <header className="border-b border-border px-4 py-2 md:px-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-foreground">L5X Ladder Logic IDE</h1>
+          <p className="text-xs text-muted-foreground">
+            RSLogix 5000 editor with AI assistance
+          </p>
+        </div>
       </header>
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full grid grid-cols-1 xl:grid-cols-12 gap-3 p-3 md:p-4">
+        <div className="h-full grid grid-cols-1 xl:grid-cols-12 gap-2 p-2">
           {/* Left Panel - Upload & Tree View */}
-          <section className="flex flex-col h-full xl:col-span-3 gap-3 min-h-0" aria-label="File upload and project structure">
+          <section className="flex flex-col h-full xl:col-span-3 gap-2 min-h-0" aria-label="File upload and project structure">
             {/* File Upload */}
-            <Card className="p-3 flex-shrink-0">
+            <Card className="p-2 flex-shrink-0">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -585,27 +587,27 @@ export default function Home() {
                 aria-label="Upload L5X file"
               />
               
-              <div className="flex gap-2 mb-3">
+              <div className="flex gap-1 mb-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 h-7 text-xs"
                   onClick={() => setNewProjectDialogOpen(true)}
                   data-testid="button-new-project"
                 >
-                  <FolderPlus className="w-4 h-4 mr-1" />
-                  New Project
+                  <FolderPlus className="w-3 h-3 mr-1" />
+                  New
                 </Button>
                 {parsedData && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 h-7 text-xs"
                     onClick={() => setNewRoutineDialogOpen(true)}
                     data-testid="button-new-routine"
                   >
-                    <FilePlus className="w-4 h-4 mr-1" />
-                    New Routine
+                    <FilePlus className="w-3 h-3 mr-1" />
+                    Routine
                   </Button>
                 )}
               </div>
@@ -613,60 +615,54 @@ export default function Home() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
-                className="w-full border-2 border-dashed border-border rounded-md p-4 hover-elevate active-elevate-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full border border-dashed border-border rounded-md p-2 hover-elevate active-elevate-2 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="button-select-file"
                 aria-label="Select L5X file to upload"
               >
-                <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center justify-center gap-2">
                   {loading ? (
-                    <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+                    <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
                   ) : (
-                    <Upload className="w-6 h-6 text-muted-foreground" />
+                    <Upload className="w-4 h-4 text-muted-foreground" />
                   )}
-                  <div className="text-sm font-medium text-foreground">
-                    {loading ? "Parsing..." : "Import .L5X File"}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Or start fresh with New Project
+                  <div className="text-xs font-medium text-foreground">
+                    {loading ? "Parsing..." : "Import L5X"}
                   </div>
                 </div>
               </button>
 
               {/* File Status */}
               {fileName && !error && parsedData && (
-                <div className="mt-3 flex items-start gap-2 p-3 bg-muted/50 rounded-md" data-testid="status-file-info">
-                  <CheckCircle2 className="w-4 h-4 text-chart-2 mt-0.5 flex-shrink-0" />
+                <div className="mt-2 flex items-center gap-2 p-2 bg-muted/50 rounded-md text-xs" data-testid="status-file-info">
+                  <CheckCircle2 className="w-3 h-3 text-chart-2 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">
+                    <div className="font-medium text-foreground truncate">
                       {fileName}
                     </div>
-                    <div className="text-xs text-muted-foreground">{fileSize}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Controller: {parsedData.controllerName}
-                    </div>
+                    <span className="text-muted-foreground"> - {parsedData.controllerName}</span>
                   </div>
                 </div>
               )}
 
               {/* Error Status */}
               {error && (
-                <div className="mt-3 flex items-start gap-2 p-3 bg-destructive/10 rounded-md" data-testid="status-error" role="alert">
-                  <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-destructive">{error}</div>
+                <div className="mt-2 flex items-center gap-2 p-2 bg-destructive/10 rounded-md text-xs" data-testid="status-error" role="alert">
+                  <AlertCircle className="w-3 h-3 text-destructive flex-shrink-0" />
+                  <div className="text-destructive">{error}</div>
                 </div>
               )}
 
               {/* File Stats */}
               {parsedData && (
-                <div className="mt-3 flex flex-wrap gap-2" data-testid="status-stats">
-                  <Badge variant="secondary" className="text-xs">
-                    {parsedData.programs.length} Programs
+                <div className="mt-2 flex flex-wrap gap-1" data-testid="status-stats">
+                  <Badge variant="secondary" className="text-[10px] h-5">
+                    {parsedData.programs.length}P
                   </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    {getTotalRoutineCount()} Routines
+                  <Badge variant="secondary" className="text-[10px] h-5">
+                    {getTotalRoutineCount()}R
                   </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    {getTotalTagCount()} Tags
+                  <Badge variant="secondary" className="text-[10px] h-5">
+                    {getTotalTagCount()}T
                   </Badge>
                 </div>
               )}
@@ -675,8 +671,8 @@ export default function Home() {
             {/* Tree View */}
             {parsedData && (
               <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
-                <div className="p-3 border-b border-border bg-card flex-shrink-0">
-                  <h2 className="text-base font-semibold text-foreground">Project Structure</h2>
+                <div className="p-2 border-b border-border bg-card flex-shrink-0">
+                  <h2 className="text-sm font-semibold text-foreground">Structure</h2>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-2 min-h-0">
@@ -730,7 +726,7 @@ export default function Home() {
                     {(() => {
                       const rungs = getCurrentRoutineRungs();
                       return (
-                        <div className="p-4 space-y-4">
+                        <div className="p-2 space-y-2">
                           {rungs && rungs.length > 0 ? (
                             rungs.map((rung) => (
                               <RungRenderer
@@ -744,9 +740,9 @@ export default function Home() {
                               />
                             ))
                           ) : (
-                            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                              <AlertCircle className="w-12 h-12 mb-2 opacity-50" />
-                              <div className="text-sm">No rungs yet</div>
+                            <div className="flex flex-col items-center justify-center h-24 text-muted-foreground">
+                              <AlertCircle className="w-8 h-8 mb-1 opacity-50" />
+                              <div className="text-xs">No rungs yet</div>
                             </div>
                           )}
                           
