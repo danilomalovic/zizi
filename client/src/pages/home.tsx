@@ -396,7 +396,7 @@ export default function Home() {
         const rung = routine?.rungs.find(r => r.number === selectedRungNumber);
         if (rung) {
           setCopiedRung({ ...rung });
-          toast({ description: `Copied rung ${selectedRungNumber}` });
+          toast({ description: `Copied rung ${selectedRungNumber}`, duration: 1000 });
         }
       }
       // Paste rung: Ctrl+V (only if no text selected)
@@ -420,7 +420,7 @@ export default function Home() {
           })
         };
         setParsedData(updatedData);
-        toast({ description: `Pasted rung` });
+        toast({ description: `Pasted rung`, duration: 1000 });
       }
       // Delete rung: Delete key
       else if (e.key === 'Delete' && selectedRungNumber !== null && selectedRoutine && parsedData) {
@@ -444,7 +444,7 @@ export default function Home() {
         };
         setParsedData(updatedData);
         setSelectedRungNumber(null);
-        toast({ description: `Deleted rung ${selectedRungNumber}` });
+        toast({ description: `Deleted rung ${selectedRungNumber}`, duration: 1000 });
       }
     };
     
@@ -480,6 +480,7 @@ export default function Home() {
     
     toast({
       description: `Created new project: ${controllerName}`,
+      duration: 1000,
     });
   };
   
@@ -520,6 +521,7 @@ export default function Home() {
     
     toast({
       description: `Created new routine: ${routineName}`,
+      duration: 1000,
     });
   };
   
@@ -553,6 +555,7 @@ export default function Home() {
     
     toast({
       description: `Created new program: ${programName}`,
+      duration: 1000,
     });
   };
   
@@ -567,7 +570,7 @@ export default function Home() {
     
     if (renameTarget.type === "controller") {
       setParsedData({ ...parsedData, controllerName: newName });
-      toast({ description: `Renamed controller to: ${newName}` });
+      toast({ description: `Renamed controller to: ${newName}`, duration: 1000 });
     } else if (renameTarget.type === "program") {
       // Check for duplicate program name
       if (parsedData.programs.some(p => p.name.toLowerCase() === newName.toLowerCase() && p.name !== renameTarget.name)) {
@@ -586,7 +589,7 @@ export default function Home() {
       if (selectedRoutine?.program === renameTarget.name) {
         setSelectedRoutine({ ...selectedRoutine, program: newName });
       }
-      toast({ description: `Renamed program to: ${newName}` });
+      toast({ description: `Renamed program to: ${newName}`, duration: 1000 });
     } else if (renameTarget.type === "routine" && renameTarget.programName) {
       // Check for duplicate routine name within the program
       const program = parsedData.programs.find(p => p.name === renameTarget.programName);
@@ -612,7 +615,7 @@ export default function Home() {
       if (selectedRoutine?.program === renameTarget.programName && selectedRoutine?.name === renameTarget.name) {
         setSelectedRoutine({ ...selectedRoutine, name: newName });
       }
-      toast({ description: `Renamed routine to: ${newName}` });
+      toast({ description: `Renamed routine to: ${newName}`, duration: 1000 });
     }
     setRenameTarget(null);
   };
@@ -646,7 +649,7 @@ export default function Home() {
           setSelectedRoutine(null);
         }
       }
-      toast({ description: `Deleted program: ${deleteTarget.name}` });
+      toast({ description: `Deleted program: ${deleteTarget.name}`, duration: 1000 });
     } else if (deleteTarget.type === "routine" && deleteTarget.programName) {
       const program = parsedData.programs.find(p => p.name === deleteTarget.programName);
       if (program && program.routines.length <= 1) {
@@ -675,7 +678,7 @@ export default function Home() {
           setSelectedRoutine(null);
         }
       }
-      toast({ description: `Deleted routine: ${deleteTarget.name}` });
+      toast({ description: `Deleted routine: ${deleteTarget.name}`, duration: 1000 });
     }
     setDeleteTarget(null);
   };
@@ -699,6 +702,7 @@ export default function Home() {
       addInstructionToRung(selectedRoutine.program, selectedRoutine.name, selectedRungNumber, instructionData);
       toast({
         description: `Added ${instructionType} to rung ${selectedRungNumber}`,
+        duration: 1000,
       });
     } else {
       // Create a new rung with the instruction
@@ -725,6 +729,7 @@ export default function Home() {
       
       toast({
         description: `Created rung ${nextRungNumber} with ${instructionType}`,
+        duration: 1000,
       });
     }
     
@@ -806,6 +811,7 @@ export default function Home() {
     
     toast({
       description: `Created rung ${nextRungNumber} - now add instructions`,
+      duration: 1000,
     });
   };
 
@@ -926,6 +932,7 @@ export default function Home() {
     
     toast({
       description: `Removed rung ${rungNumber} from ${routineName}`,
+      duration: 1000,
     });
   };
 
@@ -982,6 +989,7 @@ export default function Home() {
     setParsedData(updatedData);
     toast({
       description: `Updated ${instruction.type} instruction`,
+      duration: 1000,
     });
   };
   
@@ -1021,6 +1029,7 @@ export default function Home() {
     setParsedData(updatedData);
     toast({
       description: `Deleted ${instruction.type} instruction`,
+      duration: 1000,
     });
   };
   
@@ -1051,7 +1060,7 @@ export default function Home() {
       });
     }
     
-    toast({ description: `Created tag: ${tag.name}` });
+    toast({ description: `Created tag: ${tag.name}`, duration: 1000 });
   };
   
   const handleEditTag = (oldName: string, newTag: { name: string; dataType: string; scope: "controller" | "program"; programName?: string }) => {
@@ -1072,7 +1081,7 @@ export default function Home() {
       });
     }
     
-    toast({ description: `Updated tag: ${newTag.name}` });
+    toast({ description: `Updated tag: ${newTag.name}`, duration: 1000 });
   };
   
   const handleDeleteTag = (tagName: string, scope: "controller" | "program", programName?: string) => {
@@ -1093,7 +1102,7 @@ export default function Home() {
       });
     }
     
-    toast({ description: `Deleted tag: ${tagName}` });
+    toast({ description: `Deleted tag: ${tagName}`, duration: 1000 });
   };
 
   const handleCopyJSON = async () => {
@@ -1106,6 +1115,7 @@ export default function Home() {
       setCopied(true);
       toast({
         description: "JSON copied to clipboard",
+        duration: 1000,
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {

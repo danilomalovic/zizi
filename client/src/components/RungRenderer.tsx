@@ -19,11 +19,11 @@ interface RungRendererProps {
   onInstructionClick?: (data: InstructionClickData) => void;
 }
 
-const GRID_SIZE = 80;
-const RAIL_HEIGHT = 35;
-const INSTRUCTION_WIDTH = 60;
+const GRID_SIZE = 100;
+const RAIL_HEIGHT = 45;
+const INSTRUCTION_WIDTH = 70;
 const INSTRUCTION_HEIGHT = 30;
-const BRANCH_SPACING = 50;
+const BRANCH_SPACING = 60;
 
 export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, onInstructionClick }: RungRendererProps) {
   let xPosition = 40; // Start with offset for left margin
