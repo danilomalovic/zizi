@@ -35,7 +35,17 @@ The system uses Drizzle ORM for type-safe database operations, configured for a 
 - **User Interface**: A three-column responsive grid layout features:
     - A **Left Panel** with a file upload and an IDE-like collapsible tree view displaying the project hierarchy.
     - A **Center Panel** providing a visual ladder logic viewer with SVG rendering of rungs, instructions, and tags.
-    - A **Right Panel** hosting the AI-powered "Ask the PLC" chat assistant.
+    - A **Right Panel** with tabs for:
+        - **Ask AI**: AI-powered chat assistant for questions, edits, and removals.
+        - **Add**: Visual instruction palette for adding ladder logic instructions.
+- **Instruction Palette** (`InstructionPalette.tsx`): A categorized panel with 40+ ladder logic instructions organized in 6 categories:
+    - Bit Instructions (XIC, XIO, OTE, OTL, OTU, ONS, OSR, OSF)
+    - Timer/Counter (TON, TOF, RTO, CTU, CTD, RES)
+    - Compare (EQU, NEQ, LES, LEQ, GRT, GEQ, LIM)
+    - Math (ADD, SUB, MUL, DIV, MOD, NEG, ABS, SQR)
+    - Move/Logical (MOV, MVM, CLR, BTD, AND, OR, XOR, NOT)
+    - Program Control (JSR, RET, JMP, LBL, MCR, AFI, NOP)
+- **Instruction Editor** (`InstructionEditor.tsx`): A dialog for configuring instruction parameters when adding via the palette. Supports tag selection from the parsed project.
 - **AI Chat Assistant**: A context-aware chat panel with three modes:
     - **Ask Mode**: For natural language explanations of ladder logic.
     - **Edit Mode**: Activated by `/edit` or natural language intent, for creating new rungs via AI-generated JSON.

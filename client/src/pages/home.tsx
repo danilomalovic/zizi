@@ -1,11 +1,14 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Copy, Check, Loader2, ChevronRight, ChevronDown, Plus } from "lucide-react";
 import { parseL5X, type ParsedResult } from "@/utils/parser";
 import { RungRenderer } from "@/components/RungRenderer";
 import { ChatPanel } from "@/components/ChatPanel";
+import { InstructionPalette, type InstructionDefinition } from "@/components/InstructionPalette";
+import { InstructionEditor } from "@/components/InstructionEditor";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
 interface TreeNodeProps {
@@ -187,8 +190,54 @@ export default function Home() {
   
   const [copied, setCopied] = useState(false);
   
+  // Instruction Editor state
+  const [selectedInstruction, setSelectedInstruction] = useState<InstructionDefinition | null>(null);
+  const [instructionEditorOpen, setInstructionEditorOpen] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Handle instruction palette click
+  const handleInstructionClick = (instruction: InstructionDefinition) => {
+    if (!selectedRoutine) return; // Buttons are disabled when no routine selected
+    setSelectedInstruction(instruction);
+    setInstructionEditorOpen(true);
+  };
+  
+  // Handle instruction editor confirm
+  const handleInstructionConfirm = (instructionData: Record<string, string | number>) => {
+    if (!selectedRoutine || !parsedData) return;
+    
+    // Get the current rungs
+    const currentRungs = getCurrentRoutineRungs() || [];
+    const nextRungNumber = currentRungs.length > 0 
+      ? Math.max(...currentRungs.map(r => r.number)) + 1 
+      : 0;
+    
+    // Build rung text - handle instructions with no parameters
+    const instructionType = instructionData.type as string;
+    const params = Object.entries(instructionData)
+      .filter(([k]) => k !== 'type')
+      .map(([, v]) => v);
+    const rungText = params.length > 0 
+      ? `${instructionType}(${params.join(',')})` 
+      : instructionType;
+    
+    // Create a new rung with the instruction
+    const newRung = {
+      number: nextRungNumber,
+      text: rungText,
+      parsed: [instructionData],
+    };
+    
+    addRungToRoutine(selectedRoutine.program, selectedRoutine.name, newRung);
+    
+    toast({
+      description: `Added ${instructionType} instruction as rung ${nextRungNumber}`,
+    });
+    
+    setSelectedInstruction(null);
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -358,9 +407,9 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border px-4 py-4 md:px-6">
-        <h1 className="text-2xl font-semibold text-foreground">L5X File Parser</h1>
+        <h1 className="text-2xl font-semibold text-foreground">L5X Ladder Logic IDE</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Parse and view RSLogix 5000 control files
+          Edit and manage RSLogix 5000 ladder logic with AI assistance
         </p>
       </header>
 
@@ -529,21 +578,47 @@ export default function Home() {
             </Card>
           </section>
 
-          {/* Right Panel - AI Chat Assistant */}
-          <section className="flex flex-col h-full xl:col-span-4 min-h-0" aria-label="AI Chat Assistant">
-            <ChatPanel 
-              fullProject={parsedData}
-              currentRoutine={selectedRoutine && getCurrentRoutineRungs() ? {
-                program: selectedRoutine.program,
-                name: selectedRoutine.name,
-                rungs: getCurrentRoutineRungs()!
-              } : undefined}
-              onAddRung={addRungToRoutine}
-              onRemoveRung={removeRungFromRoutine}
-            />
+          {/* Right Panel - Instructions & AI Chat */}
+          <section className="flex flex-col h-full xl:col-span-4 min-h-0" aria-label="Instructions and AI Chat">
+            <Tabs defaultValue="chat" className="flex flex-col h-full">
+              <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                <TabsTrigger value="chat" data-testid="tab-chat">Ask AI</TabsTrigger>
+                <TabsTrigger value="instructions" data-testid="tab-instructions">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="chat" className="flex-1 min-h-0 mt-2">
+                <ChatPanel 
+                  fullProject={parsedData}
+                  currentRoutine={selectedRoutine && getCurrentRoutineRungs() ? {
+                    program: selectedRoutine.program,
+                    name: selectedRoutine.name,
+                    rungs: getCurrentRoutineRungs()!
+                  } : undefined}
+                  onAddRung={addRungToRoutine}
+                  onRemoveRung={removeRungFromRoutine}
+                />
+              </TabsContent>
+              <TabsContent value="instructions" className="flex-1 min-h-0 mt-2">
+                <InstructionPalette 
+                  onAddInstruction={handleInstructionClick}
+                  disabled={!selectedRoutine}
+                />
+              </TabsContent>
+            </Tabs>
           </section>
         </div>
       </div>
+      
+      {/* Instruction Editor Dialog */}
+      <InstructionEditor
+        instruction={selectedInstruction}
+        open={instructionEditorOpen}
+        onOpenChange={setInstructionEditorOpen}
+        onConfirm={handleInstructionConfirm}
+        availableTags={parsedData?.controllerTags?.map(t => ({ name: t.name, type: t.dataType })) || []}
+      />
     </div>
   );
 }
