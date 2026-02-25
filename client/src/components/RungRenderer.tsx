@@ -201,7 +201,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
             height={50}
             stroke="currentColor"
             strokeWidth="2"
-            fill="none"
+            fill="var(--card)"
             className="pointer-events-auto"
           />
           <text x={x + 70} y={y - 8} textAnchor="middle" fontSize="12" fill="currentColor" className="font-bold">
@@ -240,16 +240,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
           onClick={(e) => handleInstructionClick(e, instruction, currentIndex)}
           data-testid={`instruction-${instruction.type}-${currentIndex}`}
         >
-          <rect
-            x={x + 20}
-            y={y - 15}
-            width={INSTRUCTION_WIDTH}
-            height={INSTRUCTION_HEIGHT}
-            stroke="currentColor"
-            strokeWidth="2"
-            fill="none"
-            className="pointer-events-auto"
-          />
+          <rect x={x + 20} y={y - 15} width={INSTRUCTION_WIDTH} height={INSTRUCTION_HEIGHT} stroke="currentColor" strokeWidth="2" fill="var(--card)" className="pointer-events-auto" />
           <text x={x + 45} y={y - 20} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             {instruction.type}
           </text>
