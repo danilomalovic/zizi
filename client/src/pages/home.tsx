@@ -1137,10 +1137,60 @@ export default function Home() {
     return parsedData.programs.reduce((sum, p) => sum + p.routines.length, 0);
   };
 
-  const getTotalTagCount = () => {
-    if (!parsedData) return 0;
-    const programTagCount = parsedData.programs.reduce((sum, p) => sum + p.tags.length, 0);
-    return parsedData.controllerTags.length + programTagCount;
+  const [draggedRungNumber, setDraggedRungNumber] = useState<number | null>(null);
+
+  const handleRungDragStart = (rungNumber: number) => {
+    setDraggedRungNumber(rungNumber);
+  };
+
+  const handleRungDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('bg-muted/30');
+  };
+
+  const handleRungDragLeave = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('bg-muted/30');
+  };
+
+  const handleRungDrop = (targetRungNumber: number, e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('bg-muted/30');
+    
+    if (!parsedData || !selectedRoutine || draggedRungNumber === null) return;
+    
+    const routine = parsedData.programs
+      .find(p => p.name === selectedRoutine.program)
+      ?.routines.find(r => r.name === selectedRoutine.name);
+    
+    if (!routine) return;
+    
+    // Reorder rungs
+    const updatedRungs = [...routine.rungs];
+    const draggedIdx = updatedRungs.findIndex(r => r.number === draggedRungNumber);
+    const targetIdx = updatedRungs.findIndex(r => r.number === targetRungNumber);
+    
+    if (draggedIdx !== -1 && targetIdx !== -1) {
+      [updatedRungs[draggedIdx], updatedRungs[targetIdx]] = [updatedRungs[targetIdx], updatedRungs[draggedIdx]];
+      
+      const updatedData: ParsedResult = {
+        ...parsedData,
+        programs: parsedData.programs.map(p => {
+          if (p.name !== selectedRoutine.program) return p;
+          return {
+            ...p,
+            routines: p.routines.map(r => {
+              if (r.name !== selectedRoutine.name) return r;
+              return { ...r, rungs: updatedRungs };
+            })
+          };
+        })
+      };
+      
+      setParsedData(updatedData);
+      toast({ description: 'Rung reordered', duration: 1000 });
+    }
+    
+    setDraggedRungNumber(null);
   };
 
   return (
@@ -1391,16 +1441,26 @@ export default function Home() {
                         <div className="p-2 space-y-2">
                           {rungs && rungs.length > 0 ? (
                             rungs.map((rung) => (
-                              <RungRenderer
+                              <div
                                 key={rung.number}
-                                parsed={rung.parsed}
-                                rungNumber={rung.number}
-                                isSelected={selectedRungNumber === rung.number}
-                                onClick={() => setSelectedRungNumber(
-                                  selectedRungNumber === rung.number ? null : rung.number
-                                )}
-                                onInstructionClick={handleExistingInstructionClick}
-                              />
+                                draggable
+                                onDragStart={() => handleRungDragStart(rung.number)}
+                                onDragOver={handleRungDragOver}
+                                onDragLeave={handleRungDragLeave}
+                                onDrop={(e) => handleRungDrop(rung.number, e)}
+                                className="cursor-move rounded-md border border-transparent hover:border-dashed hover:border-muted-foreground transition-colors"
+                                style={{ opacity: draggedRungNumber === rung.number ? 0.5 : 1 }}
+                              >
+                                <RungRenderer
+                                  parsed={rung.parsed}
+                                  rungNumber={rung.number}
+                                  isSelected={selectedRungNumber === rung.number}
+                                  onClick={() => setSelectedRungNumber(
+                                    selectedRungNumber === rung.number ? null : rung.number
+                                  )}
+                                  onInstructionClick={handleExistingInstructionClick}
+                                />
+                              </div>
                             ))
                           ) : (
                             <div className="flex flex-col items-center justify-center h-24 text-muted-foreground">
