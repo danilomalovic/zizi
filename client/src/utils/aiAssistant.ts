@@ -7,12 +7,18 @@ export interface AIContext {
   };
 }
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
+function apiUrl(path: string): string {
+  return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
+}
+
 export async function getAIExplanation(
   question: string,
   context: AIContext
 ): Promise<string> {
   try {
-    const response = await fetch('/api/ai/ask', {
+    const response = await fetch(apiUrl('/api/ai/ask'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,7 +46,7 @@ export async function getAIEdit(
   context: AIContext
 ): Promise<string> {
   try {
-    const response = await fetch('/api/ai/edit', {
+    const response = await fetch(apiUrl('/api/ai/edit'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -68,7 +74,7 @@ export async function getAIRemove(
   context: AIContext
 ): Promise<string> {
   try {
-    const response = await fetch('/api/ai/remove', {
+    const response = await fetch(apiUrl('/api/ai/remove'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,7 +102,7 @@ export async function getAIAction(
   context: AIContext
 ): Promise<string> {
   try {
-    const response = await fetch('/api/ai/action', {
+    const response = await fetch(apiUrl('/api/ai/action'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
