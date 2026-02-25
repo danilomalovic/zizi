@@ -88,7 +88,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
           <rect x={x + 25} y={y - 35} width={25} height={55} fill="transparent" />
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
-          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 40} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -107,7 +107,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
           <line x1={x + 30} y1={y - 15} x2={x + 30} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 30} y1={y + 15} x2={x + 45} y2={y - 15} stroke="currentColor" strokeWidth="2" />
-          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 40} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -128,7 +128,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
           <line x1={x + 45} y1={y - 15} x2={x + 45} y2={y - 10} stroke="currentColor" strokeWidth="2" />
           <line x1={x + 45} y1={y + 10} x2={x + 45} y2={y + 15} stroke="currentColor" strokeWidth="2" />
           <circle cx={centerX} cy={y} r="10" stroke="currentColor" strokeWidth="2" fill="none" />
-          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 40} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -152,7 +152,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
           <text x={centerX} y={y + 4} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             L
           </text>
-          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 40} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -176,7 +176,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
           <text x={centerX} y={y + 4} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             U
           </text>
-          <text x={centerX} y={y - 25} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
+          <text x={centerX} y={y - 40} textAnchor="middle" fontSize="11" fill="currentColor" className="font-mono">
             {instruction.tag}
           </text>
         </g>
@@ -254,7 +254,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
             {instruction.type}
           </text>
           {instruction.tag && (
-            <text x={x + 45} y={y - 25} textAnchor="middle" fontSize="10" fill="currentColor" className="font-mono">
+            <text x={x + 45} y={y - 40} textAnchor="middle" fontSize="10" fill="currentColor" className="font-mono">
               {instruction.tag}
             </text>
           )}
