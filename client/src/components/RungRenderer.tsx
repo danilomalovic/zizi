@@ -250,7 +250,7 @@ export function RungRenderer({ parsed, rungNumber, isSelected = false, onClick, 
             fill="none"
             className="pointer-events-auto"
           />
-          <text x={x + 45} y={y + 5} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
+          <text x={x + 45} y={y - 20} textAnchor="middle" fontSize="11" fill="currentColor" className="font-bold">
             {instruction.type}
           </text>
           {instruction.tag && (
