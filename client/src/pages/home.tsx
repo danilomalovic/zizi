@@ -331,6 +331,7 @@ export default function Home() {
   const [renameTarget, setRenameTarget] = useState<{ type: "program" | "routine" | "controller"; name: string; programName?: string } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "program" | "routine"; name: string; programName?: string } | null>(null);
+  const [draggedRungNumber, setDraggedRungNumber] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -1137,7 +1138,11 @@ export default function Home() {
     return parsedData.programs.reduce((sum, p) => sum + p.routines.length, 0);
   };
 
-  const [draggedRungNumber, setDraggedRungNumber] = useState<number | null>(null);
+  const getTotalTagCount = () => {
+    if (!parsedData) return 0;
+    const programTagCount = parsedData.programs.reduce((sum, p) => sum + p.tags.length, 0);
+    return parsedData.controllerTags.length + programTagCount;
+  };
 
   const handleRungDragStart = (rungNumber: number) => {
     setDraggedRungNumber(rungNumber);
